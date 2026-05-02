@@ -1,0 +1,55 @@
+{
+  "schema": "partition-lab.disk-layout.v1",
+  "capturedAt": "2026-05-02T20:10:00.000Z",
+  "source": "Partition Lab mock",
+  "disk": {
+    "id": "disk0",
+    "name": "Disk 0",
+    "sizeBytes": 536870912000,
+    "sectorSizeBytes": 512,
+    "alignmentBytes": 1048576,
+    "scheme": "GPT",
+    "partitions": [
+      {
+        "id": "part-c",
+        "number": 1,
+        "name": "Windows",
+        "letter": "C",
+        "startByte": 1048576,
+        "sizeBytes": 137438953472,
+        "filesystem": {
+          "type": "ntfs",
+          "label": "Windows",
+          "totalBytes": 137438953472,
+          "usedBytes": 124554051584,
+          "minimumSizeBytes": 129922760704
+        },
+        "mounted": true,
+        "encrypted": false,
+        "dirty": false,
+        "movable": false,
+        "resizable": true
+      },
+      {
+        "id": "part-e",
+        "number": 2,
+        "name": "Data",
+        "letter": "E",
+        "startByte": 137440002048,
+        "sizeBytes": 365072220160,
+        "filesystem": {
+          "type": "ntfs",
+          "label": "Data",
+          "totalBytes": 365072220160,
+          "usedBytes": 77309411328,
+          "minimumSizeBytes": 103079215104
+        },
+        "mounted": false,
+        "encrypted": true,
+        "dirty": true,
+        "movable": true,
+        "resizable": true
+      }
+    ]
+  }
+}

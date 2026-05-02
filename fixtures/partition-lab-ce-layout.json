@@ -1,0 +1,74 @@
+{
+  "schema": "partition-lab.disk-layout.v1",
+  "capturedAt": "2026-05-02T20:00:00.000Z",
+  "source": "Partition Lab mock",
+  "disk": {
+    "id": "disk0",
+    "name": "Disk 0",
+    "sizeBytes": 536870912000,
+    "sectorSizeBytes": 512,
+    "alignmentBytes": 1048576,
+    "scheme": "GPT",
+    "partitions": [
+      {
+        "id": "part-esp",
+        "number": 1,
+        "name": "EFI System",
+        "startByte": 1048576,
+        "sizeBytes": 104857600,
+        "filesystem": {
+          "type": "ntfs",
+          "label": "ESP placeholder",
+          "totalBytes": 104857600,
+          "usedBytes": 41943040,
+          "minimumSizeBytes": 67108864
+        },
+        "mounted": false,
+        "encrypted": false,
+        "dirty": false,
+        "movable": false,
+        "resizable": false
+      },
+      {
+        "id": "part-c",
+        "number": 2,
+        "name": "Windows",
+        "letter": "C",
+        "startByte": 105906176,
+        "sizeBytes": 137438953472,
+        "filesystem": {
+          "type": "ntfs",
+          "label": "Windows",
+          "totalBytes": 137438953472,
+          "usedBytes": 124554051584,
+          "minimumSizeBytes": 129922760704
+        },
+        "mounted": false,
+        "encrypted": false,
+        "dirty": false,
+        "movable": false,
+        "resizable": true
+      },
+      {
+        "id": "part-e",
+        "number": 3,
+        "name": "Data",
+        "letter": "E",
+        "startByte": 137544859648,
+        "sizeBytes": 365072220160,
+        "filesystem": {
+          "type": "ntfs",
+          "label": "Data",
+          "totalBytes": 365072220160,
+          "usedBytes": 77309411328,
+          "minimumSizeBytes": 103079215104
+        },
+        "mounted": false,
+        "encrypted": false,
+        "dirty": false,
+        "movable": true,
+        "resizable": true
+      }
+    ]
+  }
+}
