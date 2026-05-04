@@ -16,6 +16,8 @@ import labFixture from "../fixtures/partition-lab-ce-layout.json";
 import {
   createHumanReadableSummary,
   loadDiskFromPartitionLabExport,
+  readPartitionLabMetadata,
+  type PartitionLabMetadata,
 } from "./io/partitionLab";
 import { planGiveSpaceToTarget } from "./planner/giveSpacePlanner";
 import { simulateOperationPlan } from "./simulation/simulator";
@@ -32,6 +34,7 @@ import {
 import { cloneDisk, getPartitionEnd, sortPartitions } from "./domain/layout";
 
 const fixtureDisk = loadDiskFromPartitionLabExport(labFixture);
+const fixtureLabMetadata = readPartitionLabMetadata(labFixture);
 const EXECUTION_DISABLED_REASON =
   "Execution is not available until tested through tenra Partition Lab.";
 
@@ -39,6 +42,7 @@ type ExportFormat = "plan-json" | "report-json" | "summary";
 
 function App() {
   const [disk, setDisk] = useState<Disk>(() => cloneDisk(fixtureDisk));
+  const [labMetadata, setLabMetadata] = useState<PartitionLabMetadata>(() => fixtureLabMetadata);
   const [desiredGiB, setDesiredGiB] = useState(64);
   const [importError, setImportError] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -67,6 +71,7 @@ function App() {
     try {
       const json = JSON.parse(await file.text());
       setDisk(loadDiskFromPartitionLabExport(json));
+      setLabMetadata(readPartitionLabMetadata(json));
       setImportError("");
     } catch (error) {
       const message =
@@ -79,6 +84,7 @@ function App() {
 
   function resetFixture() {
     setDisk(cloneDisk(fixtureDisk));
+    setLabMetadata(fixtureLabMetadata);
     setImportError("");
   }
 
@@ -126,6 +132,10 @@ function App() {
           <button className="workflow-item" type="button" disabled>
             <Lock size={18} />
             <span>Execution locked</span>
+          </button>
+          <button className="workflow-item" type="button">
+            <ShieldCheck size={18} />
+            <span>Lab validation visible</span>
           </button>
         </nav>
 
@@ -254,6 +264,12 @@ function App() {
               <SafetyReport findings={plan.safetyReport.findings} />
             </section>
 
+            <LabStatusPanel
+              metadata={labMetadata}
+              planStatus={plan.status}
+              simulationOk={simulation.ok}
+            />
+
             <button className="execute-button" type="button" disabled>
               <Lock size={18} />
               Execute disabled
@@ -281,6 +297,75 @@ function App() {
         </section>
       </section>
     </main>
+  );
+}
+
+function LabStatusPanel({
+  metadata,
+  planStatus,
+  simulationOk,
+}: {
+  metadata: PartitionLabMetadata;
+  planStatus: string;
+  simulationOk: boolean;
+}) {
+  const stages = [
+    {
+      label: "Layout imported",
+      detail: `${metadata.source} · ${formatTimestamp(metadata.capturedAt)}`,
+      status: "ready",
+    },
+    {
+      label: "Planner compared C and E",
+      detail:
+        planStatus === "ready"
+          ? "The current mock layout has a complete read-only operation queue."
+          : "The current layout is blocked before execution can be considered.",
+      status: planStatus === "ready" ? "ready" : "blocked",
+    },
+    {
+      label: "Simulation replay",
+      detail: simulationOk
+        ? "Studio can render the modeled after-state without touching a disk."
+        : "Simulation waits for blocking safety findings to clear.",
+      status: simulationOk ? "ready" : "blocked",
+    },
+    {
+      label: "Lab execution gate",
+      detail:
+        "Disposable VHDX/raw-image mutation remains locked until Partition Lab validates the full backend path.",
+      status: "locked",
+    },
+  ];
+
+  return (
+    <section className="surface lab-panel">
+      <SectionHeader
+        title="Partition Lab"
+        subtitle="Visible validation bridge for the destructive-test harness"
+      />
+      <div className="lab-summary">
+        <div>
+          <span>Mode</span>
+          <strong>Mock fixture / imported Lab JSON</strong>
+        </div>
+        <div>
+          <span>Execution</span>
+          <strong>Locked</strong>
+        </div>
+      </div>
+      <ol className="lab-stage-list">
+        {stages.map((stage, index) => (
+          <li className={`lab-stage lab-stage-${stage.status}`} key={stage.label}>
+            <span>{index + 1}</span>
+            <div>
+              <h3>{stage.label}</h3>
+              <p>{stage.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -423,6 +508,18 @@ function buildDiskBlocks(disk: Disk) {
   }
 
   return blocks;
+}
+
+function formatTimestamp(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 }
 
 function downloadFile(filename: string, contents: string, type: string) {

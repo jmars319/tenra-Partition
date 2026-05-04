@@ -12,6 +12,8 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "package:desktop": "npm run tauri -- build --bundles app",
+    "install:desktop": "npm run package:desktop && bash ./scripts/install-desktop-app.sh",
     "test": "vitest run",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",

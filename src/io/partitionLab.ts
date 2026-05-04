@@ -8,12 +8,30 @@ export interface PartitionLabDiskLayout {
   disk: Disk;
 }
 
+export interface PartitionLabMetadata {
+  schema: PartitionLabDiskLayout["schema"];
+  capturedAt: string;
+  source: string;
+}
+
 export function loadDiskFromPartitionLabExport(input: unknown): Disk {
   if (!isPartitionLabDiskLayout(input)) {
     throw new Error("Expected tenra Partition Lab disk layout JSON with schema partition-lab.disk-layout.v1.");
   }
 
   return input.disk;
+}
+
+export function readPartitionLabMetadata(input: unknown): PartitionLabMetadata {
+  if (!isPartitionLabDiskLayout(input)) {
+    throw new Error("Expected tenra Partition Lab disk layout JSON with schema partition-lab.disk-layout.v1.");
+  }
+
+  return {
+    schema: input.schema,
+    capturedAt: input.capturedAt,
+    source: input.source,
+  };
 }
 
 export function exportOperationPlan(plan: OperationPlan): string {

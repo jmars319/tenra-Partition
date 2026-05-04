@@ -21,6 +21,7 @@ tenra Partition Studio is Windows-compatible from day one, even when developed f
 - React and TypeScript frontend
 - Mock JSON disk scanner abstraction
 - tenra Partition Lab-compatible layout import
+- Visual tenra Partition Lab validation bridge for fixture source, simulation state, and locked execution status
 - Operation planner for giving space from `E:` to `C:`
 - In-memory simulation engine
 - Safety validator and refusal cases

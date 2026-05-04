@@ -91,7 +91,8 @@ button:disabled {
 .topbar h2,
 .section-header h2,
 .partition-card h3,
-.operation-list h3 {
+.operation-list h3,
+.lab-stage h3 {
   margin: 0;
 }
 
@@ -411,7 +412,8 @@ button:disabled {
 }
 
 .operation-list,
-.finding-list {
+.finding-list,
+.lab-stage-list {
   display: grid;
   gap: 0.65rem;
   list-style: none;
@@ -451,6 +453,79 @@ button:disabled {
 
 .operation-list p {
   font-size: 0.78rem;
+}
+
+.lab-panel {
+  border-color: #bfdbfe;
+}
+
+.lab-summary {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 0.85rem;
+  padding: 0.75rem;
+}
+
+.lab-summary span {
+  color: #3867b9;
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.lab-summary strong {
+  color: #172033;
+  display: block;
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
+}
+
+.lab-stage {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 28px 1fr;
+}
+
+.lab-stage > span {
+  align-items: center;
+  border-radius: 999px;
+  display: flex;
+  font-size: 0.72rem;
+  font-weight: 850;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.lab-stage h3 {
+  color: #172033;
+  font-size: 0.84rem;
+}
+
+.lab-stage p {
+  color: #64748b;
+  font-size: 0.77rem;
+  margin: 0.08rem 0 0;
+}
+
+.lab-stage-ready > span {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.lab-stage-blocked > span {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.lab-stage-locked > span {
+  background: #e2e8f0;
+  color: #475569;
 }
 
 .finding {
