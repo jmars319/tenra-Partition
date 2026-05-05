@@ -178,6 +178,11 @@ function App() {
             </button>
           </div>
         </section>
+
+        <section className="sidebar-section boundary-note">
+          <h2>Boundary</h2>
+          <p>Studio is the user-facing planner. Lab remains the disposable-image validation harness.</p>
+        </section>
       </aside>
 
       <section className="workspace" aria-label="Partition planning workspace">

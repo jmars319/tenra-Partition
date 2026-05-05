@@ -158,6 +158,13 @@ button:disabled {
   margin: 0.7rem 0 0;
 }
 
+.boundary-note p {
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .workspace {
   display: flex;
   flex-direction: column;
