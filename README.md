@@ -76,6 +76,7 @@ npm run dev
 npm run test
 npm run check
 npm run build
+npm run launch:desktop
 npm run tauri dev
 npm run lab:smoke:posix
 ```

@@ -1,4 +1,4 @@
-import { Disk, OperationPlan, SafetyReport } from "../domain/types";
+import { Disk, OperationPlan, SafetyReport, ValidationResult } from "../domain/types";
 import { formatBytes } from "../domain/bytes";
 
 export interface PartitionLabDiskLayout {
@@ -12,6 +12,22 @@ export interface PartitionLabMetadata {
   schema: PartitionLabDiskLayout["schema"];
   capturedAt: string;
   source: string;
+}
+
+export interface PartitionLabValidationRequest {
+  schema: "tenra-partition.lab-validation-request.v1";
+  exportedAt: string;
+  source: PartitionLabMetadata;
+  requestedExpansionBytes: number;
+  plan: OperationPlan;
+  simulation: {
+    ok: boolean;
+    validation: ValidationResult;
+  };
+  execution: {
+    enabled: false;
+    reason: string;
+  };
 }
 
 export function loadDiskFromPartitionLabExport(input: unknown): Disk {
@@ -56,6 +72,16 @@ export function exportSafetyReport(report: SafetyReport): string {
     null,
     2,
   );
+}
+
+export function loadLabValidationRequest(input: unknown): PartitionLabValidationRequest {
+  if (!isPartitionLabValidationRequest(input)) {
+    throw new Error(
+      "Expected read-only tenra Partition lab validation request JSON with schema tenra-partition.lab-validation-request.v1.",
+    );
+  }
+
+  return input;
 }
 
 export function createHumanReadableSummary(plan: OperationPlan): string {
@@ -110,5 +136,24 @@ function isDisk(input: unknown): input is Disk {
     typeof disk.alignmentBytes === "number" &&
     (disk.scheme === "GPT" || disk.scheme === "MBR") &&
     Array.isArray(disk.partitions)
+  );
+}
+
+function isPartitionLabValidationRequest(input: unknown): input is PartitionLabValidationRequest {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabValidationRequest>;
+  return (
+    candidate.schema === "tenra-partition.lab-validation-request.v1" &&
+    typeof candidate.exportedAt === "string" &&
+    candidate.source?.schema === "partition-lab.disk-layout.v1" &&
+    typeof candidate.source.capturedAt === "string" &&
+    typeof candidate.source.source === "string" &&
+    typeof candidate.requestedExpansionBytes === "number" &&
+    Boolean(candidate.plan && typeof candidate.plan === "object") &&
+    typeof candidate.simulation?.ok === "boolean" &&
+    Boolean(candidate.simulation.validation && typeof candidate.simulation.validation === "object") &&
+    candidate.execution?.enabled === false &&
+    typeof candidate.execution.reason === "string" &&
+    candidate.execution.reason.length > 0
   );
 }
