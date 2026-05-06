@@ -17,7 +17,9 @@ import labFixture from "../fixtures/partition-lab-ce-layout.json";
 import {
   createHumanReadableSummary,
   loadDiskFromPartitionLabExport,
+  loadLabValidationRequest,
   readPartitionLabMetadata,
+  type PartitionLabValidationRequest,
   type PartitionLabMetadata,
 } from "./io/partitionLab";
 import { planGiveSpaceToTarget } from "./planner/giveSpacePlanner";
@@ -72,7 +74,10 @@ function App() {
   const [desiredGiB, setDesiredGiB] = useState(64);
   const [importError, setImportError] = useState("");
   const [copiedCommandId, setCopiedCommandId] = useState("");
+  const [labValidationRequest, setLabValidationRequest] =
+    useState<PartitionLabValidationRequest | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const labRequestInputRef = useRef<HTMLInputElement | null>(null);
 
   const plan = useMemo(
     () =>
@@ -104,6 +109,23 @@ function App() {
       const message =
         error instanceof Error ? error.message : "Unknown import error.";
       setImportError(message);
+    } finally {
+      event.currentTarget.value = "";
+    }
+  }
+
+  async function handleLabRequestImport(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+
+    try {
+      setLabValidationRequest(loadLabValidationRequest(JSON.parse(await file.text())));
+      setImportError("");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown lab request import error.";
+      setImportError(message);
+      setLabValidationRequest(null);
     } finally {
       event.currentTarget.value = "";
     }
@@ -207,10 +229,21 @@ function App() {
             accept="application/json,.json"
             onChange={handleImport}
           />
+          <input
+            ref={labRequestInputRef}
+            className="visually-hidden"
+            type="file"
+            accept="application/json,.json"
+            onChange={handleLabRequestImport}
+          />
           <div className="button-grid">
             <button type="button" onClick={() => fileInputRef.current?.click()}>
               <Upload size={16} />
               Import JSON
+            </button>
+            <button type="button" onClick={() => labRequestInputRef.current?.click()}>
+              <FileJson size={16} />
+              Lab request
             </button>
             <button type="button" onClick={resetFixture}>
               <FileJson size={16} />
@@ -330,6 +363,7 @@ function App() {
 
             <LabStatusPanel
               metadata={labMetadata}
+              labValidationRequest={labValidationRequest}
               planStatus={plan.status}
               simulationOk={simulation.ok}
               commands={labCommands}
@@ -370,6 +404,7 @@ function App() {
 
 function LabStatusPanel({
   metadata,
+  labValidationRequest,
   planStatus,
   simulationOk,
   commands,
@@ -378,6 +413,7 @@ function LabStatusPanel({
   onExportLabRequest,
 }: {
   metadata: PartitionLabMetadata;
+  labValidationRequest: PartitionLabValidationRequest | null;
   planStatus: string;
   simulationOk: boolean;
   commands: LabCommand[];
@@ -430,6 +466,13 @@ function LabStatusPanel({
           <strong>Locked</strong>
         </div>
       </div>
+      {labValidationRequest ? (
+        <div className="lab-request-summary">
+          <span>Imported request</span>
+          <strong>{formatBytes(labValidationRequest.requestedExpansionBytes)} requested</strong>
+          <p>{labValidationRequest.execution.reason}</p>
+        </div>
+      ) : null}
       <ol className="lab-stage-list">
         {stages.map((stage, index) => (
           <li className={`lab-stage lab-stage-${stage.status}`} key={stage.label}>

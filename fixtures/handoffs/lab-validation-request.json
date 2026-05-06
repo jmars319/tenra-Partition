@@ -1,0 +1,36 @@
+{
+  "schema": "tenra-partition.lab-validation-request.v1",
+  "exportedAt": "2026-05-06T17:30:00.000Z",
+  "source": {
+    "schema": "partition-lab.disk-layout.v1",
+    "capturedAt": "2026-05-06T17:00:00.000Z",
+    "source": "fixture"
+  },
+  "requestedExpansionBytes": 68719476736,
+  "plan": {
+    "id": "plan_fixture",
+    "status": "ready",
+    "sourcePartitionId": "partition_e",
+    "targetPartitionId": "partition_c",
+    "requestedExpansionBytes": 68719476736,
+    "requiresMovement": true,
+    "explanation": "Read-only fixture request for disposable-image validation.",
+    "operations": [],
+    "safetyReport": {
+      "status": "ready",
+      "findings": []
+    }
+  },
+  "simulation": {
+    "ok": true,
+    "validation": {
+      "ok": true,
+      "summary": "Fixture validates the handoff shape.",
+      "findings": []
+    }
+  },
+  "execution": {
+    "enabled": false,
+    "reason": "Execution is disabled for handoff validation fixtures."
+  }
+}
