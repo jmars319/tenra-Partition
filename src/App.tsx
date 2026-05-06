@@ -516,6 +516,7 @@ function LabStatusPanel({
           : "Current simulation pass/fail differs from the imported request.",
       ].filter(Boolean)
     : [];
+  const labResultBlocked = labValidationResult?.review.status === "blocked";
   const stages = [
     {
       label: "Layout imported",
@@ -614,6 +615,13 @@ function LabStatusPanel({
           ) : (
             <p>No differences were reported by the lab result.</p>
           )}
+          {labResultBlocked ? (
+            <div className="blocked-next-action">
+              <span>Primary next action</span>
+              <strong>Export Guardrail review before any operator escalation.</strong>
+              <p>{labValidationResult.review.execution.reason}</p>
+            </div>
+          ) : null}
         </div>
       ) : null}
       <ol className="lab-stage-list">
@@ -637,6 +645,7 @@ function LabStatusPanel({
           Lab result
         </button>
         <button
+          className={labResultBlocked ? "primary-next-action" : undefined}
           type="button"
           disabled={!labValidationRequest && !labValidationResult}
           onClick={onExportGuardrailReview}

@@ -577,6 +577,33 @@ button:disabled {
   min-width: 0;
 }
 
+.blocked-next-action {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  border: 1px solid #f0b9b3;
+  border-radius: 8px;
+  background: #fff1f0;
+  padding: 0.8rem;
+}
+
+.blocked-next-action span {
+  color: #9f3d34;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.blocked-next-action strong {
+  color: #7f1d1d;
+}
+
+button.primary-next-action {
+  border-color: #b91c1c;
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
 .finding {
   border-left: 3px solid #94a3b8;
   padding-left: 0.65rem;
