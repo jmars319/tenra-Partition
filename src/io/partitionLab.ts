@@ -1,5 +1,6 @@
 import { Disk, OperationPlan, SafetyReport, ValidationResult } from "../domain/types";
 import { formatBytes } from "../domain/bytes";
+import type { SimulationResult } from "../simulation/simulator";
 
 export interface PartitionLabDiskLayout {
   schema: "partition-lab.disk-layout.v1";
@@ -27,6 +28,28 @@ export interface PartitionLabValidationRequest {
   execution: {
     enabled: false;
     reason: string;
+  };
+}
+
+export interface PartitionLabValidationResult {
+  schema: "tenra-partition.lab-validation-result.v1";
+  exportedAt: string;
+  sourceRequest: PartitionLabValidationRequest;
+  reviewedPlan: OperationPlan;
+  simulation: {
+    ok: boolean;
+    validation: ValidationResult;
+    disk: Disk;
+  };
+  review: {
+    status: "reviewed" | "blocked";
+    requestedPlanMatchesReviewedPlan: boolean;
+    safetyPosture: SafetyReport["level"];
+    differences: string[];
+    execution: {
+      enabled: false;
+      reason: string;
+    };
   };
 }
 
@@ -82,6 +105,72 @@ export function loadLabValidationRequest(input: unknown): PartitionLabValidation
   }
 
   return input;
+}
+
+export function createLabValidationResult(input: {
+  sourceRequest: PartitionLabValidationRequest;
+  reviewedPlan: OperationPlan;
+  simulation: SimulationResult;
+  executionDisabledReason: string;
+}): PartitionLabValidationResult {
+  const differences = compareRequestedPlanToReviewedPlan(input.sourceRequest.plan, input.reviewedPlan);
+  if (input.sourceRequest.simulation.ok !== input.simulation.ok) {
+    differences.push("Simulation pass/fail changed between request and review.");
+  }
+  if (input.sourceRequest.simulation.validation.summary !== input.simulation.validation.summary) {
+    differences.push("Simulation validation summary changed between request and review.");
+  }
+
+  return {
+    schema: "tenra-partition.lab-validation-result.v1",
+    exportedAt: new Date().toISOString(),
+    sourceRequest: input.sourceRequest,
+    reviewedPlan: input.reviewedPlan,
+    simulation: {
+      ok: input.simulation.ok,
+      validation: input.simulation.validation,
+      disk: input.simulation.disk,
+    },
+    review: {
+      status: input.simulation.ok && differences.length === 0 ? "reviewed" : "blocked",
+      requestedPlanMatchesReviewedPlan: differences.length === 0,
+      safetyPosture: input.reviewedPlan.safetyReport.level,
+      differences,
+      execution: {
+        enabled: false,
+        reason: input.executionDisabledReason,
+      },
+    },
+  };
+}
+
+function compareRequestedPlanToReviewedPlan(
+  requested: OperationPlan,
+  reviewed: OperationPlan,
+): string[] {
+  const differences: string[] = [];
+
+  if (requested.id !== reviewed.id) {
+    differences.push("Plan id changed between request and review.");
+  }
+  if (requested.requestedExpansionBytes !== reviewed.requestedExpansionBytes) {
+    differences.push("Requested expansion size changed between request and review.");
+  }
+  if (requested.operations.length !== reviewed.operations.length) {
+    differences.push("Operation count changed between request and review.");
+  }
+  requested.operations.forEach((operation, index) => {
+    const reviewedOperation = reviewed.operations[index];
+    if (!reviewedOperation) return;
+    if (operation.type !== reviewedOperation.type || operation.partitionId !== reviewedOperation.partitionId) {
+      differences.push(`Operation ${index + 1} changed from ${operation.type} to ${reviewedOperation.type}.`);
+    }
+  });
+  if (requested.safetyReport.level !== reviewed.safetyReport.level) {
+    differences.push("Safety level changed between request and review.");
+  }
+
+  return differences;
 }
 
 export function createHumanReadableSummary(plan: OperationPlan): string {

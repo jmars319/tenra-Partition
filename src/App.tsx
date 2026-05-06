@@ -15,6 +15,7 @@ import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import "./App.css";
 import labFixture from "../fixtures/partition-lab-ce-layout.json";
 import {
+  createLabValidationResult,
   createHumanReadableSummary,
   loadDiskFromPartitionLabExport,
   loadLabValidationRequest,
@@ -188,6 +189,23 @@ function App() {
         null,
         2,
       ),
+      "application/json",
+    );
+  }
+
+  function exportLabResult() {
+    if (!labValidationRequest) return;
+
+    const result = createLabValidationResult({
+      sourceRequest: labValidationRequest,
+      reviewedPlan: plan,
+      simulation,
+      executionDisabledReason: EXECUTION_DISABLED_REASON,
+    });
+
+    downloadFile(
+      `${plan.id}-lab-validation-result.json`,
+      JSON.stringify(result, null, 2),
       "application/json",
     );
   }
@@ -370,6 +388,7 @@ function App() {
               copiedCommandId={copiedCommandId}
               onCopyCommand={copyLabCommand}
               onExportLabRequest={exportLabRequest}
+              onExportLabResult={exportLabResult}
             />
 
             <button className="execute-button" type="button" disabled>
@@ -411,6 +430,7 @@ function LabStatusPanel({
   copiedCommandId,
   onCopyCommand,
   onExportLabRequest,
+  onExportLabResult,
 }: {
   metadata: PartitionLabMetadata;
   labValidationRequest: PartitionLabValidationRequest | null;
@@ -420,7 +440,21 @@ function LabStatusPanel({
   copiedCommandId: string;
   onCopyCommand: (command: LabCommand) => void;
   onExportLabRequest: () => void;
+  onExportLabResult: () => void;
 }) {
+  const labDifferences = labValidationRequest
+    ? [
+        labValidationRequest.requestedExpansionBytes === labValidationRequest.plan.requestedExpansionBytes
+          ? ""
+          : "Requested expansion does not match the imported plan.",
+        labValidationRequest.plan.operations.length === 0
+          ? "Imported request has no operations."
+          : "",
+        labValidationRequest.simulation.ok === simulationOk
+          ? ""
+          : "Current simulation pass/fail differs from the imported request.",
+      ].filter(Boolean)
+    : [];
   const stages = [
     {
       label: "Layout imported",
@@ -477,6 +511,29 @@ function LabStatusPanel({
           <p>{labValidationRequest.plan.validation.summary}</p>
           <p>{labValidationRequest.simulation.validation.summary}</p>
           <p>{labValidationRequest.execution.reason}</p>
+          <div className="lab-summary">
+            <div>
+              <span>Requested plan</span>
+              <strong>{labValidationRequest.plan.status}</strong>
+            </div>
+            <div>
+              <span>Simulation</span>
+              <strong>{labValidationRequest.simulation.ok ? "passed" : "blocked"}</strong>
+            </div>
+            <div>
+              <span>Safety</span>
+              <strong>{labValidationRequest.plan.safetyReport.level}</strong>
+            </div>
+          </div>
+          {labDifferences.length ? (
+            <ul>
+              {labDifferences.map((difference) => (
+                <li key={difference}>{difference}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>Requested plan, simulated result, and safety posture are aligned for this review pass.</p>
+          )}
         </div>
       ) : null}
       <ol className="lab-stage-list">
@@ -494,6 +551,10 @@ function LabStatusPanel({
         <button type="button" onClick={onExportLabRequest}>
           <Download size={16} />
           Lab request
+        </button>
+        <button type="button" disabled={!labValidationRequest} onClick={onExportLabResult}>
+          <Download size={16} />
+          Lab result
         </button>
         {commands.map((command) => (
           <button
