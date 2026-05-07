@@ -1,108 +1,68 @@
 # tenra Partition
 
-tenra Partition is a desktop partition-management app focused on safe planning,
-visualization, simulation, and later controlled execution.
+tenra Partition is a read-only planning, simulation, and lab-validation app. It is designed to help operators reason about workflows and safety boundaries without letting the planning surface mutate live systems.
 
-The app is intentionally read-only today. It does not run disk commands and it
-does not implement destructive writes. The former Lab harness now lives inside
-this repo under `lab/` so planning, simulation, disposable-image tests, and the
-desktop program move as one product.
+The project is Windows-aware and lab-oriented, with a clear separation between target workflows, UI exploration, and safety documentation.
 
-## Windows First
+## Operational Purpose
 
-tenra Partition is Windows-compatible from day one, even when developed from macOS.
+- Provide a controlled planning surface for workflow partitioning and review.
+- Keep validation and lab scenarios separate from live operational execution.
+- Make unsupported behavior explicit instead of leaving it implied.
+- Preserve safety boundaries for workflows that may later connect to real systems.
 
-- Windows is the primary desktop target.
-- All npm scripts are shell-portable and work from PowerShell or Command Prompt.
-- The Rust backend avoids Unix-only APIs and does not run platform disk commands.
-- Future native disk scanning should prioritize Windows PowerShell Storage module output before Linux or macOS adapters.
-- CI includes a `windows-latest` gate for TypeScript, planner tests, frontend build, Rust formatting, and Rust tests.
+## Design Posture
 
-## Current Scope
+- Read-only first.
+- Simulation before execution.
+- Lab documentation alongside implementation.
+- Explicit Windows compatibility considerations.
+- Tauri/Rust boundary for local desktop behavior.
 
-- Tauri 2 desktop shell
-- Rust backend with execution explicitly disabled
-- React and TypeScript frontend
-- Mock JSON disk scanner abstraction
-- Integrated lab-compatible layout import
-- Visual lab validation bridge for fixture source, simulation state, and locked execution status
-- Operation planner for giving space from `E:` to `C:`
-- In-memory simulation engine
-- Safety validator and refusal cases
-- JSON and human-readable export paths
-- Integrated lab harness for fixtures, Windows VHDX creation, raw image creation, inspection, smoke tests, and guarded destructive-mode refusal
-
-## Core Workflow
-
-The first supported workflow handles:
+## Architecture
 
 ```text
-Before:
-[C: NTFS, nearly full][E: NTFS, large, mostly unused]
-
-Goal:
-Give space from E to C.
+src-tauri/      Tauri/Rust desktop backend
+src/            Frontend app surface
+lab/            Lab harness, scenario notes, and workflow validation
+docs/           Architecture, safety, Windows, and handoff documentation
+package.json    Root scripts for development, checks, and packaging
 ```
 
-The planner models the correct operation sequence:
+## Current State
 
-1. Shrink `E:` filesystem
-2. Shrink `E:` partition
-3. Move `E:` to the right
-4. Create adjacent free space immediately after `C:`
-5. Expand `C:` partition
-6. Expand `C:` filesystem
+- The desktop app is the active surface.
+- The current scope is planning, simulation, and lab validation.
+- The lab harness documents target workflows, UI expectations, image workflow notes, and not-yet-implemented behavior.
+- Safety boundaries are documented as part of the product, not treated as future cleanup.
 
-This is not treated as a simple shrink/extend workflow. Shrinking `E:` creates unallocated space to the right of `E:`, so `C:` cannot use it until `E:` is moved.
+## Deployment Posture
 
-## Project Layout
+Partition is a local desktop and lab-validation project. It should not be connected to live mutation workflows until the read-only boundary, safety model, and workflow execution contracts are deliberately changed.
 
-```text
-src/          React UI, domain model, planner, simulator, import/export helpers
-src-tauri/    Tauri Rust shell and non-execution backend status
-fixtures/     App-level mock/import fixtures
-lab/          Integrated validation harness formerly kept as the separate Lab repo
-docs/         Architecture and safety notes
-tests/        Vitest planner, simulator, and refusal tests
-```
+## Working Locally
 
-## Development
-
-These commands are valid on macOS, Windows PowerShell, Windows Command Prompt, and Git Bash:
-
-```sh
+```bash
 npm install
 npm run dev
-npm run test
 npm run check
-npm run build
-npm run launch:desktop
-npm run tauri dev
-npm run lab:smoke:posix
+npm run test
+npm run tauri
+npm run verify:handoffs
 ```
 
-For Windows setup details, see [docs/windows.md](docs/windows.md).
+Use the lab scripts when validating documented scenarios rather than product runtime behavior.
 
-## Lab Harness
+## Direction
 
-The integrated `lab/` directory contains the fixture-driven and disposable-image
-test harness. Its scripts still default to mock fixtures, refuse known system
-disks, and keep destructive execution locked. It is part of tenra Partition now,
-not a separate app.
+- Keep the planning surface constrained and inspectable.
+- Expand lab coverage before adding operational execution.
+- Preserve Windows compatibility as part of the product contract.
+- Make unsupported actions visible to operators.
 
-Useful lab commands:
+## Related Documentation
 
-```sh
-npm run lab:smoke:posix
-cd lab && scripts/plan_operation.py --layout fixtures/normal-c-e-layout.json --increase-c 40G
-cd lab && scripts/start_ui.sh --open
-```
-
-On Windows, use the PowerShell scripts in `lab/scripts/`.
-
-## Safety Boundary
-
-tenra Partition does not currently execute partition operations. The Execute
-control is disabled and the Rust backend exposes only a disabled execution
-status. Real execution must wait until the integrated lab harness can validate
-operations against disposable disk images.
+- [Architecture](docs/architecture.md)
+- [Safety](docs/safety.md)
+- [Windows](docs/windows.md)
+- [Lab Harness](lab/README.md)
