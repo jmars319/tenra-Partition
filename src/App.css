@@ -587,6 +587,11 @@ button:disabled {
   padding: 0.8rem;
 }
 
+.blocked-result-queue {
+  border-color: #f0b9b3;
+  background: #fff1f0;
+}
+
 .blocked-next-action span {
   color: #9f3d34;
   font-size: 0.72rem;

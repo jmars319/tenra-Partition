@@ -86,6 +86,7 @@ function App() {
     useState<PartitionLabValidationResult | null>(null);
   const [guardrailDecisionJson, setGuardrailDecisionJson] = useState("");
   const [guardrailDecision, setGuardrailDecision] = useState<PartitionGuardrailDecision | null>(null);
+  const [guardrailDecisionHistory, setGuardrailDecisionHistory] = useState<PartitionGuardrailDecision[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const labRequestInputRef = useRef<HTMLInputElement | null>(null);
   const labResultInputRef = useRef<HTMLInputElement | null>(null);
@@ -275,6 +276,7 @@ function App() {
         throw new Error("Guardrail decision does not match the current Partition lab review.");
       }
       setGuardrailDecision(decision);
+      setGuardrailDecisionHistory((current) => [decision, ...current.filter((item) => item.requestTraceId !== decision.requestTraceId)].slice(0, 5));
       setGuardrailDecisionJson("");
       setImportError("");
     } catch (error) {
@@ -475,6 +477,7 @@ function App() {
               onExportLabResult={exportLabResult}
               onExportGuardrailReview={exportGuardrailReview}
               guardrailDecision={guardrailDecision}
+              guardrailDecisionHistory={guardrailDecisionHistory}
               guardrailDecisionJson={guardrailDecisionJson}
               onGuardrailDecisionJsonChange={setGuardrailDecisionJson}
               onImportGuardrailDecision={importGuardrailDecision}
@@ -519,6 +522,7 @@ function LabStatusPanel({
   commands,
   copiedCommandId,
   guardrailDecision,
+  guardrailDecisionHistory,
   guardrailDecisionJson,
   onCopyCommand,
   onExportLabRequest,
@@ -531,6 +535,7 @@ function LabStatusPanel({
   labValidationRequest: PartitionLabValidationRequest | null;
   labValidationResult: PartitionLabValidationResult | null;
   guardrailDecision: PartitionGuardrailDecision | null;
+  guardrailDecisionHistory: PartitionGuardrailDecision[];
   guardrailDecisionJson: string;
   planStatus: string;
   simulationOk: boolean;
@@ -557,6 +562,9 @@ function LabStatusPanel({
       ].filter(Boolean)
     : [];
   const labResultBlocked = labValidationResult?.review.status === "blocked";
+  const blockedLabResults = labValidationResult?.review.status === "blocked" && guardrailDecision?.decision !== "allow"
+    ? [labValidationResult]
+    : [];
   const guardrailResolution =
     guardrailDecision?.decision === "allow"
       ? "Guardrail allowed operator resolution. Execution remains locked until lab policy changes."
@@ -678,6 +686,28 @@ function LabStatusPanel({
               <p>{guardrailResolution}</p>
             </div>
           ) : null}
+        </div>
+      ) : null}
+      {blockedLabResults.length ? (
+        <div className="lab-request-summary blocked-result-queue">
+          <span>Blocked lab result queue</span>
+          {blockedLabResults.map((result) => (
+            <div key={result.sourceRequest.plan.id}>
+              <strong>{result.sourceRequest.plan.id}</strong>
+              <p>{result.review.execution.reason}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {guardrailDecisionHistory.length ? (
+        <div className="lab-request-summary">
+          <span>Decision import history</span>
+          {guardrailDecisionHistory.map((decision) => (
+            <div key={`${decision.requestTraceId}-${decision.decidedAt}`}>
+              <strong>{decision.decision}</strong>
+              <p>{decision.requestTraceId} · {new Date(decision.decidedAt).toLocaleString()}</p>
+            </div>
+          ))}
         </div>
       ) : null}
       <ol className="lab-stage-list">
