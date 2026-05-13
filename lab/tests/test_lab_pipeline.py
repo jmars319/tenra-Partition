@@ -8,6 +8,7 @@ import json
 import shutil
 import subprocess
 import unittest
+import uuid
 from pathlib import Path
 
 
@@ -55,7 +56,7 @@ class RawImageNormalizationTests(unittest.TestCase):
             shutil.rmtree(path, ignore_errors=True)
 
     def image_path(self, name: str) -> Path:
-        image = TEST_IMAGES_DIR / f"{name}.raw.img"
+        image = TEST_IMAGES_DIR / f"{name}-{uuid.uuid4().hex}.raw.img"
         self.created.append(image)
         self.created.append(image.with_suffix(image.suffix + ".manifest.json"))
         return image
@@ -114,7 +115,7 @@ class RawImageNormalizationTests(unittest.TestCase):
         return json.loads(result.stdout)
 
     def write_layout_file(self, name: str, layout: dict[str, object]) -> Path:
-        path = TEST_IMAGES_DIR / f"{name}.layout.json"
+        path = TEST_IMAGES_DIR / f"{name}-{uuid.uuid4().hex}.layout.json"
         self.created.append(path)
         path.write_text(json.dumps(layout, indent=2), encoding="utf-8")
         return path
