@@ -9,6 +9,8 @@ Windows compatibility is a Day 1 requirement. The primary script surface is Powe
 See [docs/windows-compatibility.md](docs/windows-compatibility.md) for the Windows-specific command surface.
 See [docs/gparted-live-reference.md](docs/gparted-live-reference.md) for how the
 local GParted Live ISO informs the lab toolchain and staged execution plan.
+See [docs/raw-image-safety-matrix.md](docs/raw-image-safety-matrix.md) for the
+current pure-Python disposable raw-image scenario matrix.
 
 The lab models and tests this workflow:
 
@@ -45,6 +47,8 @@ Implemented:
 - Dry-run command plans for real NTFS tooling and executable geometry-only raw image steps.
 - Guarded geometry-only raw image mutation against per-run work copies under `runs/`.
 - Geometry verification for final C/E layout, payload marker hashes, and source image preservation.
+- Simulated interruption tests for snapshot, byte move, GPT rewrite, manifest update, and verification stages.
+- Desktop import and display for capability, command-plan, geometry-run, and verification artifacts.
 - A local browser dashboard for selecting fixtures, entering operation inputs, viewing disk layout, and watching the mock process queue.
 - A guarded destructive-mode entrypoint that performs safety checks, delegates only explicit geometry-only lab mode, and refuses real NTFS mutation.
 
@@ -223,6 +227,12 @@ or:
 scripts/create_image.py --scenario normal-c-e-layout
 ```
 
+Create a blocked scenario:
+
+```bash
+scripts/create_image.py --scenario dirty-filesystem-placeholder
+```
+
 By default this creates:
 
 - `test-images/normal-c-e-layout.raw.img`
@@ -285,6 +295,17 @@ The source image is not modified. The runner writes a per-run directory under
 - `verification.json`
 - `geometry-run.json`
 - the mutated work image and work manifest
+
+Simulate an interrupted run:
+
+```bash
+scripts/run_geometry_operation.py \
+  --image test-images/normal-c-e-layout.raw.img \
+  --increase-c 1GiB \
+  --i-understand-this-is-geometry-only \
+  --simulate-interruption gpt-rewrite \
+  --json
+```
 
 ## Guarded Destructive Entrypoint
 

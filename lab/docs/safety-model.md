@@ -12,6 +12,9 @@ Geometry-only raw mode creates a per-run work copy under `runs/` and mutates
 only that work copy. It requires an explicit geometry-only acknowledgement and
 does not run NTFS shrink or grow commands.
 
+The raw-image scenario matrix covers ready, blocked, malformed, corrupted, and
+interrupted states. See [raw-image-safety-matrix.md](raw-image-safety-matrix.md).
+
 Loop-device mode is limited to loop devices created from lab images. Scripts refuse block devices by default, and future write-mode scripts must require explicit lab-device flags.
 
 Future VM mode is not implemented.

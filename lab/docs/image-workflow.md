@@ -95,6 +95,10 @@ scripts/run_geometry_operation.py \
 Geometry-only mode rewrites GPT boundaries and moves raw bytes in the work copy
 only. It does not perform real NTFS shrink or grow operations.
 
+Import generated capability, command-plan, geometry-run, or verification JSON
+through the desktop app's Lab artifact import to review results without running
+scripts from the UI.
+
 ## Linux Bash Path
 
 The Bash script remains available for Linux hosts with `parted`, `losetup`, `mkfs.ntfs`, and mount support:
