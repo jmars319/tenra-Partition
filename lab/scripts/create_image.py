@@ -9,6 +9,7 @@ images.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import struct
@@ -27,6 +28,8 @@ ALIGNMENT_SECTORS = 2048
 MICROSOFT_BASIC_DATA_GUID = uuid.UUID("EBD0A0A2-B9E5-4433-87C0-68B6B72699C7")
 GPT_PARTITION_ENTRY_SIZE = 128
 GPT_PARTITION_ENTRY_COUNT = 128
+PAYLOAD_MARKER_OFFSET_BYTES = 4096
+PAYLOAD_MARKER_SIZE_BYTES = 4096
 
 
 def align_up(value: int, alignment: int) -> int:
@@ -196,13 +199,71 @@ def create_sparse_file(path: Path, disk_size: int) -> None:
         handle.truncate(disk_size)
 
 
-def write_manifest(path: Path, scenario: str, partition_table: str, disk_size: int, partitions: list[dict[str, Any]]) -> None:
+def partition_size_bytes(partition: dict[str, Any]) -> int:
+    return (partition["end_sector"] - partition["start_sector"] + 1) * SECTOR_SIZE
+
+
+def marker_payload(image_id: str, partition: dict[str, Any]) -> tuple[bytes, dict[str, Any]]:
+    payload_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"{image_id}:{partition['label']}:{partition['start_sector']}"))
+    content = {
+        "schema": "partition-lab.payload-marker.v1",
+        "image_id": image_id,
+        "payload_id": payload_id,
+        "partition_number": partition["number"],
+        "label": partition["label"],
+    }
+    raw = json.dumps(content, sort_keys=True, separators=(",", ":")).encode("utf-8") + b"\n"
+    if len(raw) > PAYLOAD_MARKER_SIZE_BYTES:
+        raise ValueError("payload marker is larger than reserved marker size")
+    marker = raw + (b"\0" * (PAYLOAD_MARKER_SIZE_BYTES - len(raw)))
+    return marker, {
+        "schema": "partition-lab.payload-marker.v1",
+        "payload_id": payload_id,
+        "offset_bytes": PAYLOAD_MARKER_OFFSET_BYTES,
+        "size_bytes": PAYLOAD_MARKER_SIZE_BYTES,
+        "sha256": hashlib.sha256(marker).hexdigest(),
+    }
+
+
+def write_payload_markers(path: Path, image_id: str, partitions: list[dict[str, Any]]) -> None:
+    with path.open("r+b") as handle:
+        for partition in partitions:
+            if partition_size_bytes(partition) <= PAYLOAD_MARKER_OFFSET_BYTES + PAYLOAD_MARKER_SIZE_BYTES:
+                raise ValueError(f"partition {partition['label']} is too small for payload marker")
+            marker, metadata = marker_payload(image_id, partition)
+            handle.seek(partition["start_sector"] * SECTOR_SIZE + PAYLOAD_MARKER_OFFSET_BYTES)
+            handle.write(marker)
+            partition["payload_marker"] = metadata
+
+
+def write_manifest(
+    path: Path,
+    scenario: str,
+    image_id: str,
+    partition_table: str,
+    disk_size: int,
+    partitions: list[dict[str, Any]],
+    c_used_bytes: int,
+    e_used_bytes: int,
+    min_source_free_after_bytes: int,
+) -> None:
+    usage_by_label = {
+        "C": c_used_bytes,
+        "E": e_used_bytes,
+    }
     manifest = {
         "schema": "partition-lab.image-manifest.v1",
+        "manifest_version": 2,
         "scenario": scenario,
+        "image_id": image_id,
         "image": str(path),
         "format": "raw",
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
+        "workflow": {
+            "target_label": "C",
+            "source_label": "E",
+            "minimum_source_free_after_bytes": min_source_free_after_bytes,
+        },
         "disk": {
             "label": partition_table,
             "sector_size": SECTOR_SIZE,
@@ -211,9 +272,15 @@ def write_manifest(path: Path, scenario: str, partition_table: str, disk_size: i
             "partitions": [
                 {
                     **partition,
-                    "filesystem": "unformatted-placeholder",
+                    "type": "msftdata",
+                    "filesystem": "raw-geometry-placeholder",
                     "intended_filesystem": "ntfs",
+                    "filesystem_state": "clean",
                     "mountpoint": None,
+                    "encrypted": False,
+                    "used_bytes": usage_by_label.get(partition["label"], 0),
+                    "free_bytes": partition_size_bytes(partition) - usage_by_label.get(partition["label"], 0),
+                    "minimum_size_bytes": usage_by_label.get(partition["label"], 0) + min_source_free_after_bytes,
                 }
                 for partition in partitions
             ],
@@ -231,6 +298,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--disk-size", default="12GiB", help="Disk image size. Default: 12GiB.")
     parser.add_argument("--c-size", default="4GiB", help="C partition size. Default: 4GiB.")
     parser.add_argument("--e-size", default="7GiB", help="E partition size. Default: 7GiB.")
+    parser.add_argument("--c-used", default="3500MiB", help="Modeled used bytes on C. Default: 3500MiB.")
+    parser.add_argument("--e-used", default="2GiB", help="Modeled used bytes on E. Default: 2GiB.")
+    parser.add_argument(
+        "--min-source-free-after",
+        default="1GiB",
+        help="Modeled minimum free bytes to preserve on E after shrink. Default: 1GiB.",
+    )
     parser.add_argument("--partition-table", choices=("gpt", "mbr"), default="gpt", help="Partition table. Default: gpt.")
     parser.add_argument("--force", action="store_true", help="Replace an existing image.")
     parser.add_argument("--dry-run", action="store_true", help="Print actions without writing the image.")
@@ -243,6 +317,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         disk_size = parse_size(args.disk_size)
+        c_used_bytes = parse_size(args.c_used)
+        e_used_bytes = parse_size(args.e_used)
+        min_source_free_after_bytes = parse_size(args.min_source_free_after)
         if disk_size % SECTOR_SIZE:
             raise ValueError("--disk-size must be sector-aligned")
         output = Path(args.output) if args.output else TEST_IMAGES_DIR / f"{args.scenario}.raw.img"
@@ -255,12 +332,17 @@ def main(argv: list[str] | None = None) -> int:
         partitions = build_partitions(args.c_size, args.e_size)
         if partitions[-1]["end_sector"] >= disk_size // SECTOR_SIZE:
             raise ValueError("C and E partitions do not fit in the requested disk image")
+        for partition, used_bytes in ((partitions[0], c_used_bytes), (partitions[1], e_used_bytes)):
+            if used_bytes >= partition_size_bytes(partition):
+                raise ValueError(f"{partition['label']} modeled used bytes must be smaller than the partition")
+        image_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"partition-lab:{args.scenario}:{output.name}:{disk_size}"))
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
 
     actions = [
         f"create sparse raw image: {output}",
         f"write {args.partition_table.upper()} partition table",
+        "write deterministic payload markers",
         "write manifest JSON",
     ]
     for action in actions:
@@ -275,7 +357,18 @@ def main(argv: list[str] | None = None) -> int:
         write_gpt_image(output, disk_size, partitions)
     else:
         write_mbr_image(output, disk_size, partitions)
-    write_manifest(output, args.scenario, args.partition_table, disk_size, partitions)
+    write_payload_markers(output, image_id, partitions)
+    write_manifest(
+        output,
+        args.scenario,
+        image_id,
+        args.partition_table,
+        disk_size,
+        partitions,
+        c_used_bytes,
+        e_used_bytes,
+        min_source_free_after_bytes,
+    )
     print(f"Created disposable raw image: {output}")
     print("Note: raw fallback images are partitioned but not NTFS-formatted.")
     return 0

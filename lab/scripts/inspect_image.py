@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import struct
@@ -13,10 +14,11 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from partitionlab_common import safety_assessment, print_json
+from partitionlab_common import SCHEMA_LAYOUT, safety_assessment, print_json
 
 
 SECTOR_SIZE = 512
+MANIFEST_SCHEMA = "partition-lab.image-manifest.v1"
 
 
 def run_command(command: list[str]) -> dict[str, Any]:
@@ -179,10 +181,151 @@ def parse_raw_partition_table(path: Path) -> dict[str, Any] | None:
         return None
 
 
+def manifest_path_for_image(path: Path) -> Path:
+    return path.with_suffix(path.suffix + ".manifest.json")
+
+
+def load_image_manifest(path: Path) -> dict[str, Any] | None:
+    manifest_path = manifest_path_for_image(path)
+    if not manifest_path.exists():
+        return None
+    with manifest_path.open("r", encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    if manifest.get("schema") != MANIFEST_SCHEMA:
+        raise ValueError(f"expected manifest schema {MANIFEST_SCHEMA}")
+    return manifest
+
+
+def read_payload_marker(path: Path, partition: dict[str, Any], marker: dict[str, Any]) -> dict[str, Any]:
+    offset = int(partition["start_sector"]) * SECTOR_SIZE + int(marker["offset_bytes"])
+    size = int(marker["size_bytes"])
+    with path.open("rb") as handle:
+        handle.seek(offset)
+        payload = handle.read(size)
+    actual_hash = hashlib.sha256(payload).hexdigest()
+    return {
+        **marker,
+        "actual_sha256": actual_hash,
+        "hash_ok": actual_hash == marker.get("sha256"),
+    }
+
+
+def free_regions(partitions: list[dict[str, Any]], total_sectors: int) -> list[dict[str, Any]]:
+    regions: list[dict[str, Any]] = []
+    previous_end = -1
+    for partition in sorted(partitions, key=lambda item: int(item["start_sector"])):
+        start = int(partition["start_sector"])
+        if start > previous_end + 1:
+            regions.append(
+                {
+                    "start_sector": previous_end + 1,
+                    "end_sector": start - 1,
+                    "size_bytes": (start - previous_end - 1) * SECTOR_SIZE,
+                }
+            )
+        previous_end = int(partition["end_sector"])
+    if previous_end + 1 < total_sectors:
+        regions.append(
+            {
+                "start_sector": previous_end + 1,
+                "end_sector": total_sectors - 1,
+                "size_bytes": (total_sectors - previous_end - 1) * SECTOR_SIZE,
+            }
+        )
+    return [region for region in regions if region["size_bytes"] > 0]
+
+
+def normalize_raw_layout(path: Path, raw: dict[str, Any], manifest: dict[str, Any] | None) -> dict[str, Any]:
+    if manifest is None:
+        raise ValueError(f"missing image manifest: {manifest_path_for_image(path)}")
+    if raw.get("format") != "raw":
+        raise ValueError("layout normalization currently supports raw image inspection only")
+
+    manifest_disk = manifest.get("disk")
+    if not isinstance(manifest_disk, dict):
+        raise ValueError("image manifest is missing disk metadata")
+    manifest_partitions = {
+        int(partition["number"]): partition
+        for partition in manifest_disk.get("partitions", [])
+        if isinstance(partition, dict) and "number" in partition
+    }
+
+    normalized_partitions: list[dict[str, Any]] = []
+    for raw_partition in raw.get("partitions", []):
+        number = int(raw_partition["number"])
+        metadata = manifest_partitions.get(number)
+        if not metadata:
+            raise ValueError(f"image manifest is missing metadata for partition {number}")
+
+        label = str(metadata.get("label") or metadata.get("name") or raw_partition.get("name") or number)
+        filesystem = (
+            metadata.get("intended_filesystem")
+            or raw_partition.get("filesystem")
+            or metadata.get("filesystem")
+            or "unknown"
+        )
+        files = list(metadata.get("files") or [])
+        marker = metadata.get("payload_marker")
+        payload_marker = None
+        if isinstance(marker, dict):
+            payload_marker = read_payload_marker(path, raw_partition, marker)
+            files.append(f"/payload-markers/{label}-{marker.get('payload_id', 'unknown')}.bin")
+
+        partition = {
+            "number": number,
+            "label": label,
+            "name": str(metadata.get("name") or label),
+            "type": metadata.get("type") or raw_partition.get("type_guid") or raw_partition.get("type") or "unknown",
+            "start_sector": int(raw_partition["start_sector"]),
+            "end_sector": int(raw_partition["end_sector"]),
+            "filesystem": str(filesystem).lower(),
+            "filesystem_state": metadata.get("filesystem_state", "clean"),
+            "mountpoint": metadata.get("mountpoint"),
+            "encrypted": bool(metadata.get("encrypted", False)),
+            "used_bytes": int(metadata.get("used_bytes", 0)),
+            "free_bytes": int(metadata.get("free_bytes", 0)),
+            "minimum_size_bytes": int(metadata.get("minimum_size_bytes", metadata.get("used_bytes", 0))),
+            "files": files,
+        }
+        if payload_marker:
+            partition["payload_marker"] = payload_marker
+        normalized_partitions.append(partition)
+
+    total_sectors = int(raw["size_bytes"]) // int(raw.get("sector_size", SECTOR_SIZE))
+    layout = {
+        "schema": SCHEMA_LAYOUT,
+        "scenario": manifest.get("scenario"),
+        "mode": "raw-geometry",
+        "description": "Normalized from a disposable raw image inspection.",
+        "image": {
+            "path": str(path.resolve(strict=False)),
+            "manifest": str(manifest_path_for_image(path).resolve(strict=False)),
+            "format": "raw",
+            "image_id": manifest.get("image_id"),
+        },
+        "workflow": manifest.get("workflow", {}),
+        "disk": {
+            "id": manifest.get("image_id") or path.stem,
+            "path": str(path.resolve(strict=False)),
+            "label": raw.get("partition_table", manifest_disk.get("label", "unknown")),
+            "sector_size": int(raw.get("sector_size", manifest_disk.get("sector_size", SECTOR_SIZE))),
+            "alignment_sectors": int(manifest_disk.get("alignment_sectors", 2048)),
+            "size_bytes": int(raw["size_bytes"]),
+            "operation_state": manifest_disk.get("operation_state"),
+            "partitions": sorted(normalized_partitions, key=lambda item: item["start_sector"]),
+            "free_regions": free_regions(normalized_partitions, total_sectors),
+        },
+    }
+    if layout["disk"]["operation_state"] is None:
+        del layout["disk"]["operation_state"]
+    return layout
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Inspect a raw disk image with the built-in GPT/MBR parser plus optional system tools.")
     parser.add_argument("--image", required=True, help="Path to a disk image. Must be under test-images by default.")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
+    parser.add_argument("--layout-json", action="store_true", help="Emit normalized partition-lab.layout.v1 JSON.")
     parser.add_argument(
         "--allow-outside-test-images",
         action="store_true",
@@ -212,11 +355,19 @@ def main(argv: list[str] | None = None) -> int:
 
     commands: list[dict[str, Any]] = []
     parsed: dict[str, Any] = {}
+    manifest: dict[str, Any] | None = None
     tool_available = {
         "parted": shutil.which("parted") is not None,
         "sgdisk": shutil.which("sgdisk") is not None,
         "lsblk": shutil.which("lsblk") is not None,
     }
+
+    try:
+        manifest = load_image_manifest(target)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        if args.layout_json:
+            parser.error(str(exc))
+        parsed["manifest_error"] = str(exc)
 
     if tool_available["parted"]:
         command = ["parted", "-m", "-s", str(target), "unit", "s", "print", "free"]
@@ -228,6 +379,22 @@ def main(argv: list[str] | None = None) -> int:
     raw_partition_table = parse_raw_partition_table(target)
     if raw_partition_table:
         parsed["raw"] = raw_partition_table
+    if manifest:
+        parsed["manifest"] = {
+            "path": str(manifest_path_for_image(target)),
+            "schema": manifest.get("schema"),
+            "scenario": manifest.get("scenario"),
+            "image_id": manifest.get("image_id"),
+        }
+
+    if args.layout_json:
+        if not raw_partition_table:
+            parser.error("no raw GPT/MBR partition table was parsed")
+        try:
+            print_json(normalize_raw_layout(target, raw_partition_table, manifest))
+        except (OSError, ValueError) as exc:
+            parser.error(str(exc))
+        return 0
 
     if tool_available["sgdisk"]:
         commands.append(run_command(["sgdisk", "-p", str(target)]))
