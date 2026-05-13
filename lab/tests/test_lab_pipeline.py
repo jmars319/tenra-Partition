@@ -181,11 +181,27 @@ class RawImageNormalizationTests(unittest.TestCase):
         corrupted = self.create_preset_image("corrupted-payload-marker")
         corrupted_layout = self.layout_for_image(corrupted)
         self.assertFalse(corrupted_layout["disk"]["partitions"][1]["payload_marker"]["hash_ok"])
+        self.assertEqual(corrupted_layout["manifest_validation"]["status"], "blocked")
+        self.assertIn(
+            "payload-marker-hash-mismatch",
+            {issue["id"] for issue in corrupted_layout["manifest_validation"]["issues"]},
+        )
 
         malformed = self.create_preset_image("malformed-manifest")
         result = self.run_script("inspect_image.py", "--image", str(malformed), "--layout-json")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("expected manifest schema", result.stderr)
+
+    def test_manifest_validation_reports_unsafe_preset_states(self) -> None:
+        for scenario, issue_id in (
+            ("dirty-filesystem-placeholder", "manifest-filesystem-state"),
+            ("encrypted-filesystem-placeholder", "manifest-encrypted"),
+            ("interrupted-operation-placeholder", "manifest-operation-state"),
+        ):
+            with self.subTest(scenario=scenario):
+                layout = self.layout_for_image(self.create_preset_image(scenario))
+                self.assertEqual(layout["manifest_validation"]["status"], "blocked")
+                self.assertIn(issue_id, {issue["id"] for issue in layout["manifest_validation"]["issues"]})
 
     def test_command_plan_has_geometry_steps_and_real_ntfs_dry_run_steps(self) -> None:
         image = self.create_image("unittest-command-plan")

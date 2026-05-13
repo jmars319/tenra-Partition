@@ -21,6 +21,10 @@ SECTOR_SIZE = 512
 MANIFEST_SCHEMA = "partition-lab.image-manifest.v1"
 
 
+def issue(issue_id: str, severity: str, message: str) -> dict[str, str]:
+    return {"id": issue_id, "severity": severity, "message": message}
+
+
 def run_command(command: list[str]) -> dict[str, Any]:
     try:
         completed = subprocess.run(command, check=False, text=True, capture_output=True)
@@ -196,6 +200,78 @@ def load_image_manifest(path: Path) -> dict[str, Any] | None:
     return manifest
 
 
+def validate_image_manifest(path: Path, raw: dict[str, Any], manifest: dict[str, Any]) -> list[dict[str, str]]:
+    issues: list[dict[str, str]] = []
+    manifest_disk = manifest.get("disk")
+    if not isinstance(manifest.get("image_id"), str) or not manifest["image_id"]:
+        issues.append(issue("manifest-image-id-missing", "error", "manifest.image_id must be a non-empty string"))
+    if not isinstance(manifest_disk, dict):
+        return [*issues, issue("manifest-disk-missing", "error", "manifest.disk is required")]
+
+    if manifest.get("format") != "raw":
+        issues.append(issue("manifest-format", "error", "manifest.format must be raw"))
+    manifest_image = manifest.get("image")
+    if isinstance(manifest_image, str) and Path(manifest_image).name != path.name:
+        issues.append(issue("manifest-image-path-mismatch", "warning", "manifest image path points at a different filename"))
+    if manifest_disk.get("label") != raw.get("partition_table"):
+        issues.append(issue("manifest-partition-table-mismatch", "error", "manifest disk label does not match parsed partition table"))
+    if manifest_disk.get("sector_size") != raw.get("sector_size"):
+        issues.append(issue("manifest-sector-size-mismatch", "error", "manifest sector size does not match parsed image"))
+    if manifest_disk.get("size_bytes") != raw.get("size_bytes"):
+        issues.append(issue("manifest-size-mismatch", "error", "manifest disk size does not match parsed image"))
+
+    manifest_partitions = manifest_disk.get("partitions")
+    if not isinstance(manifest_partitions, list):
+        return [*issues, issue("manifest-partitions-missing", "error", "manifest.disk.partitions must be a list")]
+    if len(manifest_partitions) != len(raw.get("partitions", [])):
+        issues.append(issue("manifest-partition-count-mismatch", "error", "manifest partition count does not match parsed image"))
+
+    raw_by_number = {int(partition["number"]): partition for partition in raw.get("partitions", [])}
+    labels = set()
+    for partition in manifest_partitions:
+        if not isinstance(partition, dict) or "number" not in partition:
+            issues.append(issue("manifest-partition-invalid", "error", "manifest partition entries must include number"))
+            continue
+        number = int(partition["number"])
+        label = str(partition.get("label") or partition.get("name") or number).upper()
+        labels.add(label)
+        raw_partition = raw_by_number.get(number)
+        if not raw_partition:
+            issues.append(issue("manifest-partition-missing-in-image", "error", f"partition {number} is not present in parsed image"))
+            continue
+        for field in ("start_sector", "end_sector"):
+            if int(partition.get(field, -1)) != int(raw_partition[field]):
+                issues.append(issue("manifest-partition-bounds-mismatch", "error", f"partition {number} {field} does not match parsed image"))
+        size_bytes = (int(partition["end_sector"]) - int(partition["start_sector"]) + 1) * int(raw.get("sector_size", SECTOR_SIZE))
+        used_bytes = partition.get("used_bytes")
+        free_bytes = partition.get("free_bytes")
+        if not isinstance(used_bytes, int) or used_bytes < 0:
+            issues.append(issue("manifest-used-bytes-invalid", "error", f"partition {number} used_bytes must be non-negative"))
+        if not isinstance(free_bytes, int) or free_bytes < 0:
+            issues.append(issue("manifest-free-bytes-invalid", "error", f"partition {number} free_bytes must be non-negative"))
+        if isinstance(used_bytes, int) and isinstance(free_bytes, int) and used_bytes + free_bytes > size_bytes:
+            issues.append(issue("manifest-capacity-invalid", "error", f"partition {number} used_bytes plus free_bytes exceeds partition size"))
+        if partition.get("filesystem_state") not in {None, "clean"}:
+            issues.append(issue("manifest-filesystem-state", "blocking", f"partition {label} filesystem state is {partition.get('filesystem_state')}"))
+        if partition.get("encrypted"):
+            issues.append(issue("manifest-encrypted", "blocking", f"partition {label} is marked encrypted"))
+
+    workflow = manifest.get("workflow")
+    if isinstance(workflow, dict):
+        for label_field in ("target_label", "source_label"):
+            label = str(workflow.get(label_field, "")).upper()
+            if label not in labels:
+                issues.append(issue("manifest-workflow-label-missing", "error", f"workflow {label_field} does not match a partition label"))
+    else:
+        issues.append(issue("manifest-workflow-missing", "error", "manifest.workflow is required"))
+
+    operation_state = manifest_disk.get("operation_state")
+    if operation_state:
+        issues.append(issue("manifest-operation-state", "blocking", f"disk operation_state is {operation_state}"))
+
+    return issues
+
+
 def read_payload_marker(path: Path, partition: dict[str, Any], marker: dict[str, Any]) -> dict[str, Any]:
     offset = int(partition["start_sector"]) * SECTOR_SIZE + int(marker["offset_bytes"])
     size = int(marker["size_bytes"])
@@ -240,6 +316,10 @@ def normalize_raw_layout(path: Path, raw: dict[str, Any], manifest: dict[str, An
         raise ValueError(f"missing image manifest: {manifest_path_for_image(path)}")
     if raw.get("format") != "raw":
         raise ValueError("layout normalization currently supports raw image inspection only")
+    validation_issues = validate_image_manifest(path, raw, manifest)
+    structural_errors = [item for item in validation_issues if item["severity"] == "error"]
+    if structural_errors:
+        raise ValueError("; ".join(item["message"] for item in structural_errors))
 
     manifest_disk = manifest.get("disk")
     if not isinstance(manifest_disk, dict):
@@ -269,6 +349,10 @@ def normalize_raw_layout(path: Path, raw: dict[str, Any], manifest: dict[str, An
         payload_marker = None
         if isinstance(marker, dict):
             payload_marker = read_payload_marker(path, raw_partition, marker)
+            if not payload_marker["hash_ok"]:
+                validation_issues.append(
+                    issue("payload-marker-hash-mismatch", "blocking", f"{label} payload marker hash does not match the manifest")
+                )
             files.append(f"/payload-markers/{label}-{marker.get('payload_id', 'unknown')}.bin")
 
         partition = {
@@ -297,6 +381,14 @@ def normalize_raw_layout(path: Path, raw: dict[str, Any], manifest: dict[str, An
         "scenario": manifest.get("scenario"),
         "mode": "raw-geometry",
         "description": "Normalized from a disposable raw image inspection.",
+        "manifest_validation": {
+            "status": "blocked"
+            if any(item["severity"] == "blocking" for item in validation_issues)
+            else "review"
+            if any(item["severity"] == "warning" for item in validation_issues)
+            else "pass",
+            "issues": validation_issues,
+        },
         "image": {
             "path": str(path.resolve(strict=False)),
             "manifest": str(manifest_path_for_image(path).resolve(strict=False)),
