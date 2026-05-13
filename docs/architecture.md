@@ -26,6 +26,9 @@ Future adapters should be added in this priority order:
 - macOS `diskutil`
 
 No adapter in this app runs real disk commands today.
+The local GParted Live ISO is tracked as a lab reference in
+`lab/docs/gparted-live-reference.md`; it informs future toolchain and VM
+validation work without changing the current read-only execution boundary.
 
 ## Execution Boundary
 

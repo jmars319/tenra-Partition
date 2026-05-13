@@ -7,6 +7,8 @@ software and it does not make the desktop app safe for real disk mutation.
 Windows compatibility is a Day 1 requirement. The primary script surface is PowerShell plus Python, and the primary real-image format on Windows is disposable VHDX under `test-images/`. Bash/Linux tooling is optional secondary support.
 
 See [docs/windows-compatibility.md](docs/windows-compatibility.md) for the Windows-specific command surface.
+See [docs/gparted-live-reference.md](docs/gparted-live-reference.md) for how the
+local GParted Live ISO informs the lab toolchain and staged execution plan.
 
 The lab models and tests this workflow:
 

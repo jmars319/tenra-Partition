@@ -13,3 +13,5 @@ The project intentionally does not implement these items yet:
 - Production safety guarantees.
 
 The next implementation step should be to extend inspection so real image layouts can be normalized into the same JSON shape as the mock fixtures. Only after that should real image mutation be considered.
+The GParted Live ISO can be used as a reference and future VM payload for this
+work, but it does not make write-mode execution available by itself.
