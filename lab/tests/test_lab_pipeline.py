@@ -291,6 +291,34 @@ class RawImageNormalizationTests(unittest.TestCase):
         self.assertNotEqual(refused.returncode, 0)
         self.assertIn("qcow2 output must be under", refused.stderr)
 
+    def test_scenario_batch_report_handles_pass_and_blocked_scenarios(self) -> None:
+        result = self.run_script("run_scenario_batch.py", "--json")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.created_dirs.append(Path(report["run_dir"]))
+        for scenario in report["scenarios"]:
+            image = Path(scenario["artifacts"]["image"])
+            manifest = Path(scenario["artifacts"]["manifest"])
+            self.created.append(image)
+            self.created.append(manifest)
+
+        self.assertEqual(report["schema"], "partition-lab.batch-report.v1")
+        self.assertEqual(report["summary"]["fail"], 0)
+        self.assertGreaterEqual(report["summary"]["pass"], 1)
+        self.assertGreaterEqual(report["summary"]["blocked"], 1)
+        self.assertTrue((Path(report["run_dir"]) / "batch-report.json").exists())
+        statuses = {scenario["name"]: scenario["status"] for scenario in report["scenarios"]}
+        self.assertEqual(statuses["normal-c-e-layout"], "pass")
+        self.assertEqual(statuses["missing-manifest"], "blocked")
+        self.assertEqual(statuses["too-large-requested-expansion"], "blocked")
+        self.assertTrue(
+            all(
+                scenario.get("source_fingerprint", {}).get("unchanged", True)
+                for scenario in report["scenarios"]
+            )
+        )
+
     def test_command_plan_reports_stable_blockers_for_unsafe_scenarios(self) -> None:
         cases = {
             "mbr-layout": "partition-table-not-gpt",
