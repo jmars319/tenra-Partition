@@ -156,11 +156,41 @@ export interface PartitionLabVerifyResult {
   checks: Array<{ name: string; status: string }>;
 }
 
+export interface PartitionLabBatchReport {
+  schema: "partition-lab.batch-report.v1";
+  batch_id: string;
+  run_dir: string;
+  summary: {
+    total: number;
+    pass: number;
+    blocked: number;
+    fail: number;
+  };
+  scenarios: Array<{
+    name: string;
+    status: string;
+    blockers?: Array<{ id: string; message?: string }>;
+  }>;
+}
+
+export interface PartitionLabVmPlan {
+  schema: "partition-lab.vm-plan.v1";
+  plan_id: string;
+  status: string;
+  blockers?: Array<{ id: string; message?: string }>;
+  iso?: { path?: string | null };
+  work_image?: { path?: string | null };
+  qemu_command?: string[];
+  steps?: Array<{ id: string; title: string }>;
+}
+
 export type PartitionLabArtifact =
   | PartitionLabCapabilities
   | PartitionLabCommandPlan
   | PartitionLabGeometryRun
-  | PartitionLabVerifyResult;
+  | PartitionLabVerifyResult
+  | PartitionLabBatchReport
+  | PartitionLabVmPlan;
 
 export function loadDiskFromPartitionLabExport(input: unknown): Disk {
   if (isPartitionLabDiskLayout(input)) {
@@ -253,6 +283,8 @@ export function loadPartitionLabArtifact(input: unknown): PartitionLabArtifact {
   if (isPartitionLabCommandPlan(input)) return input;
   if (isPartitionLabGeometryRun(input)) return input;
   if (isPartitionLabVerifyResult(input)) return input;
+  if (isPartitionLabBatchReport(input)) return input;
+  if (isPartitionLabVmPlan(input)) return input;
 
   throw new Error("Expected Partition Lab artifact JSON.");
 }
@@ -519,6 +551,32 @@ function isPartitionLabVerifyResult(input: unknown): input is PartitionLabVerify
     candidate.schema === "partition-lab.verify.v1" &&
     typeof candidate.verification_status === "string" &&
     Array.isArray(candidate.checks)
+  );
+}
+
+function isPartitionLabBatchReport(input: unknown): input is PartitionLabBatchReport {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabBatchReport>;
+  return (
+    candidate.schema === "partition-lab.batch-report.v1" &&
+    typeof candidate.batch_id === "string" &&
+    typeof candidate.run_dir === "string" &&
+    Boolean(candidate.summary && typeof candidate.summary === "object") &&
+    typeof candidate.summary?.total === "number" &&
+    typeof candidate.summary.pass === "number" &&
+    typeof candidate.summary.blocked === "number" &&
+    typeof candidate.summary.fail === "number" &&
+    Array.isArray(candidate.scenarios)
+  );
+}
+
+function isPartitionLabVmPlan(input: unknown): input is PartitionLabVmPlan {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabVmPlan>;
+  return (
+    candidate.schema === "partition-lab.vm-plan.v1" &&
+    typeof candidate.plan_id === "string" &&
+    typeof candidate.status === "string"
   );
 }
 

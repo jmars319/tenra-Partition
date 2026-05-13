@@ -858,6 +858,42 @@ function LabArtifactCard({ artifact }: { artifact: PartitionLabArtifact }) {
     );
   }
 
+  if (artifact.schema === "partition-lab.batch-report.v1") {
+    const visibleScenarios = artifact.scenarios.slice(0, 6);
+    return (
+      <article className="lab-artifact-card">
+        <strong>Batch report · {artifact.summary.pass} pass / {artifact.summary.blocked} blocked / {artifact.summary.fail} fail</strong>
+        <p>{artifact.batch_id}</p>
+        <div className="lab-artifact-grid">
+          {visibleScenarios.map((scenario) => (
+            <span className={scenario.status === "pass" ? "artifact-pass" : "artifact-blocked"} key={scenario.name}>
+              {scenario.name}: {scenario.status}
+              {scenario.blockers?.length ? ` (${scenario.blockers.length})` : ""}
+            </span>
+          ))}
+        </div>
+        <p>{artifact.run_dir}</p>
+      </article>
+    );
+  }
+
+  if (artifact.schema === "partition-lab.vm-plan.v1") {
+    return (
+      <article className="lab-artifact-card">
+        <strong>VM plan · {artifact.status}</strong>
+        <p>{artifact.plan_id}</p>
+        <p>{artifact.iso?.path ?? "No ISO selected"}</p>
+        <p>{artifact.work_image?.path ?? "No cloned work image"}</p>
+        <div className="lab-artifact-grid">
+          {(artifact.blockers ?? []).map((item) => (
+            <span className="artifact-blocked" key={item.id}>{item.id}</span>
+          ))}
+          {artifact.qemu_command?.length ? <span className="artifact-pass">qemu command ready</span> : null}
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="lab-artifact-card">
       <strong>Verification · {artifact.verification_status}</strong>
