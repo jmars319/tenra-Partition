@@ -139,7 +139,7 @@ if [[ "$DRY_RUN" -eq 1 ]]; then
 fi
 
 if [[ "$GEOMETRY_ONLY_LAB" -eq 1 ]]; then
-  run "$SCRIPT_DIR/run_geometry_operation.py" \
+  run python3 "$SCRIPT_DIR/run_geometry_operation.py" \
     --image "$RESOLVED_IMAGE" \
     --increase-c "$INCREASE_C" \
     --i-understand-this-is-geometry-only \

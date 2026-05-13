@@ -65,6 +65,36 @@ Inspect a raw image:
 scripts/inspect_image.py --image test-images/normal-c-e-layout.raw.img
 ```
 
+Normalize a raw image for the planner:
+
+```bash
+scripts/inspect_image.py \
+  --image test-images/normal-c-e-layout.raw.img \
+  --layout-json
+```
+
+Generate a dry-run command plan:
+
+```bash
+scripts/command_plan.py \
+  --layout test-images/normal-c-e-layout.layout.json \
+  --increase-c 1GiB \
+  --json
+```
+
+Run geometry-only mutation on a work copy:
+
+```bash
+scripts/run_geometry_operation.py \
+  --image test-images/normal-c-e-layout.raw.img \
+  --increase-c 1GiB \
+  --i-understand-this-is-geometry-only \
+  --json
+```
+
+Geometry-only mode rewrites GPT boundaries and moves raw bytes in the work copy
+only. It does not perform real NTFS shrink or grow operations.
+
 ## Linux Bash Path
 
 The Bash script remains available for Linux hosts with `parted`, `losetup`, `mkfs.ntfs`, and mount support:

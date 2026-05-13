@@ -40,13 +40,18 @@ Implemented:
 - Windows VHDX image creation with `diskpart`, NTFS formatting, and synthetic data population.
 - Cross-platform raw image creation under `test-images/` using pure Python.
 - Read-only raw image inspection using a pure Python GPT/MBR parser, with optional `parted`, `sgdisk`, and `lsblk` enrichment when available.
+- Host capability discovery for native partition, NTFS, VM, Windows VHDX, and checksum tools.
+- Normalized `partition-lab.layout.v1` output from disposable raw image inspection.
+- Dry-run command plans for real NTFS tooling and executable geometry-only raw image steps.
+- Guarded geometry-only raw image mutation against per-run work copies under `runs/`.
+- Geometry verification for final C/E layout, payload marker hashes, and source image preservation.
 - A local browser dashboard for selecting fixtures, entering operation inputs, viewing disk layout, and watching the mock process queue.
-- A guarded destructive-mode entrypoint that performs safety checks and then refuses real writes.
+- A guarded destructive-mode entrypoint that performs safety checks, delegates only explicit geometry-only lab mode, and refuses real NTFS mutation.
 
 Not implemented yet:
 
-- Real partition mutation.
 - Real NTFS shrink, move, or grow execution.
+- Physical disk mutation.
 - VM orchestration.
 - Any polished UI or GUI app.
 - Any claim that this is safe for production disks.
@@ -59,19 +64,24 @@ Guardrails:
 
 - Test images live under `test-images/`.
 - Generated logs live under `logs/`.
+- Generated geometry run directories live under `runs/`.
 - Windows physical drive paths such as `\\.\PhysicalDrive0` are refused.
 - Unix block devices are refused unless explicitly marked as lab devices.
 - Known system disks such as `/dev/sda`, `/dev/nvme0n1`, `/dev/vda`, `/dev/xvda`, `/dev/disk0`, and `C:` are denied.
 - Future destructive mode requires `-IUnderstandThisIsDestructive` on PowerShell or `--i-understand-this-is-destructive` on Bash.
-- The current destructive runner still refuses real mutation after performing safety checks.
+- Geometry-only raw mode also requires `--geometry-only-lab` on the guarded Bash entrypoint or `-GeometryOnlyLab` on PowerShell.
+- The current destructive runner still refuses real NTFS mutation after performing safety checks.
 
 Modes are intentionally separate:
 
 - Mock mode: JSON fixtures only. No disk images.
 - Windows image mode: VHDX files under `test-images/`.
 - Raw image mode: regular raw image files under `test-images/`.
+- Raw geometry mode: lab-only GPT geometry mutation on a work copy, with no real NTFS shrink/grow.
 - Loop-device mode: disposable loop devices attached to lab images only.
 - Future VM mode: not implemented.
+
+Safe-to-test currently means safe to test the planner, normalization, dry-run command planning, and geometry-only raw image mutation against disposable image work copies. It does not mean safe for physical disks or real NTFS mutation.
 
 ## Quick Start
 
@@ -130,6 +140,12 @@ Run smoke tests:
 
 ```bash
 scripts/smoke_test.sh
+```
+
+Discover host capabilities:
+
+```bash
+scripts/discover_capabilities.py --json
 ```
 
 ## Fixtures
@@ -213,6 +229,7 @@ By default this creates:
 - GPT partition table
 - C partition
 - E partition
+- deterministic payload markers inside C and E
 - `test-images/normal-c-e-layout.raw.img.manifest.json`
 
 The legacy Bash image script remains available for Linux hosts with `parted`, `losetup`, `mkfs.ntfs`, and mount support:
@@ -227,9 +244,52 @@ Inspect a raw image:
 scripts/inspect_image.py --image test-images/normal-c-e-layout.raw.img
 ```
 
+Normalize a raw image into the planner layout schema:
+
+```bash
+scripts/inspect_image.py \
+  --image test-images/normal-c-e-layout.raw.img \
+  --layout-json
+```
+
+Generate a disposable-image command plan:
+
+```bash
+scripts/command_plan.py \
+  --layout test-images/normal-c-e-layout.layout.json \
+  --increase-c 1GiB \
+  --json
+```
+
+The command plan includes a ready raw-geometry mode when the layout passes
+safety checks. Real NTFS mode remains dry-run-only and is blocked unless native
+tools such as `parted`, `sgdisk`, `ntfsresize`, `ntfsclone`, and `ntfs-3g` are
+available.
+
+Run a geometry-only lab mutation against a work copy:
+
+```bash
+scripts/run_geometry_operation.py \
+  --image test-images/normal-c-e-layout.raw.img \
+  --increase-c 1GiB \
+  --i-understand-this-is-geometry-only \
+  --json
+```
+
+The source image is not modified. The runner writes a per-run directory under
+`runs/` containing:
+
+- `before-layout.json`
+- `command-plan.json`
+- `after-layout.json`
+- `verification.json`
+- `geometry-run.json`
+- the mutated work image and work manifest
+
 ## Guarded Destructive Entrypoint
 
-The future destructive runner exists only as a safety guard right now.
+The future destructive runner exists as a safety guard for real mutation and as
+an explicit delegation point for geometry-only raw lab mode.
 
 Windows:
 
@@ -244,6 +304,12 @@ Write mode would require:
 
 ```powershell
 -IUnderstandThisIsDestructive
+```
+
+Geometry-only raw mode additionally requires:
+
+```powershell
+-GeometryOnlyLab
 ```
 
 macOS/Linux:
@@ -261,7 +327,13 @@ Write mode would require:
 --i-understand-this-is-destructive
 ```
 
-Even with that flag, real mutation is intentionally refused in this phase.
+Geometry-only raw mode additionally requires:
+
+```bash
+--geometry-only-lab
+```
+
+Even with these flags, real NTFS mutation is intentionally refused in this phase.
 
 ## Why Moving E Is Required
 
