@@ -105,6 +105,63 @@ export interface PartitionGuardrailDecision {
   };
 }
 
+export interface PartitionLabCapabilities {
+  schema: "partition-lab.capabilities.v1";
+  host: {
+    platform?: string;
+    machine?: string;
+  };
+  modes: Record<string, {
+    available: boolean;
+    blockers?: string[];
+  }>;
+  blockers?: Array<{ id: string; message: string }>;
+  warnings?: Array<{ id: string; message: string }>;
+}
+
+export interface PartitionLabCommandPlan {
+  schema: "partition-lab.command-plan.v1";
+  scenario?: string;
+  modes: Record<string, {
+    status: string;
+    dry_run_only?: boolean;
+    blockers?: string[];
+    steps?: Array<{
+      step: number;
+      id: string;
+      title: string;
+      writes: boolean;
+    }>;
+  }>;
+}
+
+export interface PartitionLabGeometryRun {
+  schema: "partition-lab.geometry-run.v1";
+  run_id: string;
+  status: string;
+  failure_class?: string | null;
+  source_image: string;
+  work_image?: string | null;
+  run_dir: string;
+  preflight?: { status: string };
+  postflight?: { status: string };
+  checks?: Array<{ name: string; status: string }>;
+  preserved_artifacts?: Array<{ kind: string; path: string }>;
+}
+
+export interface PartitionLabVerifyResult {
+  schema: "partition-lab.verify.v1";
+  scenario?: string;
+  verification_status: string;
+  checks: Array<{ name: string; status: string }>;
+}
+
+export type PartitionLabArtifact =
+  | PartitionLabCapabilities
+  | PartitionLabCommandPlan
+  | PartitionLabGeometryRun
+  | PartitionLabVerifyResult;
+
 export function loadDiskFromPartitionLabExport(input: unknown): Disk {
   if (isPartitionLabDiskLayout(input)) {
     return input.disk;
@@ -189,6 +246,15 @@ export function loadPartitionGuardrailDecision(input: unknown): PartitionGuardra
   }
 
   return input;
+}
+
+export function loadPartitionLabArtifact(input: unknown): PartitionLabArtifact {
+  if (isPartitionLabCapabilities(input)) return input;
+  if (isPartitionLabCommandPlan(input)) return input;
+  if (isPartitionLabGeometryRun(input)) return input;
+  if (isPartitionLabVerifyResult(input)) return input;
+
+  throw new Error("Expected Partition Lab artifact JSON.");
 }
 
 export function createLabValidationResult(input: {
@@ -419,6 +485,40 @@ function isPartitionGuardrailDecision(input: unknown): input is PartitionGuardra
     typeof candidate.reason === "string" &&
     candidate.sourceReturn?.app === "partition" &&
     candidate.sourceReturn.action === "apply-guardrail-decision"
+  );
+}
+
+function isPartitionLabCapabilities(input: unknown): input is PartitionLabCapabilities {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabCapabilities>;
+  return candidate.schema === "partition-lab.capabilities.v1" && Boolean(candidate.modes && typeof candidate.modes === "object");
+}
+
+function isPartitionLabCommandPlan(input: unknown): input is PartitionLabCommandPlan {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabCommandPlan>;
+  return candidate.schema === "partition-lab.command-plan.v1" && Boolean(candidate.modes && typeof candidate.modes === "object");
+}
+
+function isPartitionLabGeometryRun(input: unknown): input is PartitionLabGeometryRun {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabGeometryRun>;
+  return (
+    candidate.schema === "partition-lab.geometry-run.v1" &&
+    typeof candidate.run_id === "string" &&
+    typeof candidate.status === "string" &&
+    typeof candidate.source_image === "string" &&
+    typeof candidate.run_dir === "string"
+  );
+}
+
+function isPartitionLabVerifyResult(input: unknown): input is PartitionLabVerifyResult {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabVerifyResult>;
+  return (
+    candidate.schema === "partition-lab.verify.v1" &&
+    typeof candidate.verification_status === "string" &&
+    Array.isArray(candidate.checks)
   );
 }
 

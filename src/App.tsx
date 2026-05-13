@@ -21,8 +21,10 @@ import {
   loadDiskFromPartitionLabExport,
   loadLabValidationResult,
   loadLabValidationRequest,
+  loadPartitionLabArtifact,
   loadPartitionGuardrailDecision,
   readPartitionLabMetadata,
+  type PartitionLabArtifact,
   type PartitionGuardrailDecision,
   type PartitionLabValidationRequest,
   type PartitionLabValidationResult,
@@ -87,9 +89,11 @@ function App() {
   const [guardrailDecisionJson, setGuardrailDecisionJson] = useState("");
   const [guardrailDecision, setGuardrailDecision] = useState<PartitionGuardrailDecision | null>(null);
   const [guardrailDecisionHistory, setGuardrailDecisionHistory] = useState<PartitionGuardrailDecision[]>([]);
+  const [labArtifacts, setLabArtifacts] = useState<PartitionLabArtifact[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const labRequestInputRef = useRef<HTMLInputElement | null>(null);
   const labResultInputRef = useRef<HTMLInputElement | null>(null);
+  const labArtifactInputRef = useRef<HTMLInputElement | null>(null);
 
   const plan = useMemo(
     () =>
@@ -155,6 +159,23 @@ function App() {
         error instanceof Error ? error.message : "Unknown lab result import error.";
       setImportError(message);
       setLabValidationResult(null);
+    } finally {
+      event.currentTarget.value = "";
+    }
+  }
+
+  async function handleLabArtifactImport(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0];
+    if (!file) return;
+
+    try {
+      const artifact = loadPartitionLabArtifact(JSON.parse(await file.text()));
+      setLabArtifacts((current) => [artifact, ...current].slice(0, 6));
+      setImportError("");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown lab artifact import error.";
+      setImportError(message);
     } finally {
       event.currentTarget.value = "";
     }
@@ -335,6 +356,13 @@ function App() {
             accept="application/json,.json"
             onChange={handleLabResultImport}
           />
+          <input
+            ref={labArtifactInputRef}
+            className="visually-hidden"
+            type="file"
+            accept="application/json,.json"
+            onChange={handleLabArtifactImport}
+          />
           <div className="button-grid">
             <button type="button" onClick={() => fileInputRef.current?.click()}>
               <Upload size={16} />
@@ -347,6 +375,10 @@ function App() {
             <button type="button" onClick={() => labResultInputRef.current?.click()}>
               <FileJson size={16} />
               Lab result
+            </button>
+            <button type="button" onClick={() => labArtifactInputRef.current?.click()}>
+              <FileJson size={16} />
+              Lab artifact
             </button>
             <button type="button" onClick={resetFixture}>
               <FileJson size={16} />
@@ -478,6 +510,7 @@ function App() {
               onExportGuardrailReview={exportGuardrailReview}
               guardrailDecision={guardrailDecision}
               guardrailDecisionHistory={guardrailDecisionHistory}
+              labArtifacts={labArtifacts}
               guardrailDecisionJson={guardrailDecisionJson}
               onGuardrailDecisionJsonChange={setGuardrailDecisionJson}
               onImportGuardrailDecision={importGuardrailDecision}
@@ -523,6 +556,7 @@ function LabStatusPanel({
   copiedCommandId,
   guardrailDecision,
   guardrailDecisionHistory,
+  labArtifacts,
   guardrailDecisionJson,
   onCopyCommand,
   onExportLabRequest,
@@ -536,6 +570,7 @@ function LabStatusPanel({
   labValidationResult: PartitionLabValidationResult | null;
   guardrailDecision: PartitionGuardrailDecision | null;
   guardrailDecisionHistory: PartitionGuardrailDecision[];
+  labArtifacts: PartitionLabArtifact[];
   guardrailDecisionJson: string;
   planStatus: string;
   simulationOk: boolean;
@@ -710,6 +745,16 @@ function LabStatusPanel({
           ))}
         </div>
       ) : null}
+      {labArtifacts.length ? (
+        <div className="lab-request-summary">
+          <span>Imported lab artifacts</span>
+          <div className="lab-artifact-list">
+            {labArtifacts.map((artifact, index) => (
+              <LabArtifactCard artifact={artifact} key={`${artifact.schema}-${index}`} />
+            ))}
+          </div>
+        </div>
+      ) : null}
       <ol className="lab-stage-list">
         {stages.map((stage, index) => (
           <li className={`lab-stage lab-stage-${stage.status}`} key={stage.label}>
@@ -765,6 +810,59 @@ function LabStatusPanel({
         </button>
       </div>
     </section>
+  );
+}
+
+function LabArtifactCard({ artifact }: { artifact: PartitionLabArtifact }) {
+  if (artifact.schema === "partition-lab.capabilities.v1") {
+    const modes = Object.entries(artifact.modes);
+    return (
+      <article className="lab-artifact-card">
+        <strong>Capabilities · {artifact.host.platform ?? "host"}</strong>
+        <div className="lab-artifact-grid">
+          {modes.map(([name, mode]) => (
+            <span className={mode.available ? "artifact-pass" : "artifact-blocked"} key={name}>
+              {name}: {mode.available ? "available" : "blocked"}
+            </span>
+          ))}
+        </div>
+      </article>
+    );
+  }
+
+  if (artifact.schema === "partition-lab.command-plan.v1") {
+    const modes = Object.entries(artifact.modes);
+    return (
+      <article className="lab-artifact-card">
+        <strong>Command plan · {artifact.scenario ?? "scenario"}</strong>
+        <div className="lab-artifact-grid">
+          {modes.map(([name, mode]) => (
+            <span className={mode.status === "ready" ? "artifact-pass" : "artifact-blocked"} key={name}>
+              {name}: {mode.status}
+              {mode.blockers?.length ? ` (${mode.blockers.length})` : ""}
+            </span>
+          ))}
+        </div>
+      </article>
+    );
+  }
+
+  if (artifact.schema === "partition-lab.geometry-run.v1") {
+    return (
+      <article className="lab-artifact-card">
+        <strong>Geometry run · {artifact.status}</strong>
+        <p>{artifact.run_id}</p>
+        <p>{artifact.failure_class ? `Failure: ${artifact.failure_class}` : "No failure class"}</p>
+        <p>{artifact.work_image ?? "No work image"}</p>
+      </article>
+    );
+  }
+
+  return (
+    <article className="lab-artifact-card">
+      <strong>Verification · {artifact.verification_status}</strong>
+      <p>{artifact.scenario ?? "scenario"} · {artifact.checks.length} check(s)</p>
+    </article>
   );
 }
 
