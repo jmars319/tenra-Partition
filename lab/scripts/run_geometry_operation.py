@@ -36,6 +36,13 @@ from verify_layout import compare_layouts
 SCHEMA_GEOMETRY_RUN = "partition-lab.geometry-run.v1"
 RUNS_DIR = PROJECT_ROOT / "runs"
 COPY_CHUNK_BYTES = 1024 * 1024
+INTERRUPTION_STAGES = {"snapshot", "byte-move", "gpt-rewrite", "manifest-update", "verification"}
+
+
+class SimulatedInterruption(RuntimeError):
+    def __init__(self, stage: str):
+        super().__init__(f"simulated interruption at {stage}")
+        self.stage = stage
 
 
 def utc_stamp() -> str:
@@ -177,7 +184,32 @@ def update_work_manifest(
     return manifest
 
 
-def apply_geometry(work_image: Path, before_layout: dict[str, Any], increase_bytes: int, target_label: str, source_label: str) -> None:
+def mark_work_manifest_unsafe(work_image: Path, stage: str) -> None:
+    manifest_path = manifest_path_for_image(work_image)
+    if not manifest_path.exists():
+        return
+    manifest = load_json(manifest_path)
+    manifest.setdefault("disk", {})["operation_state"] = f"interrupted-{stage}"
+    manifest["unsafe_state"] = {
+        "reason": "simulated-interruption",
+        "stage": stage,
+        "marked_at_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    manifest["validation"] = {
+        "status": "unsafe",
+        "blockers": [f"interrupted-{stage}"],
+    }
+    write_json(manifest_path, manifest)
+
+
+def apply_geometry(
+    work_image: Path,
+    before_layout: dict[str, Any],
+    increase_bytes: int,
+    target_label: str,
+    source_label: str,
+    simulate_interruption: Optional[str] = None,
+) -> None:
     bytes_per_sector = sector_size(before_layout)
     if increase_bytes % bytes_per_sector:
         raise LayoutError("increase is not sector aligned")
@@ -191,6 +223,8 @@ def apply_geometry(work_image: Path, before_layout: dict[str, Any], increase_byt
 
     source_offset = int(source["start_sector"]) * bytes_per_sector
     destination_offset = (int(source["start_sector"]) + increase_sectors) * bytes_per_sector
+    if simulate_interruption == "byte-move":
+        raise SimulatedInterruption("byte-move")
     copy_range_backward(work_image, source_offset, destination_offset, moved_source_size)
     zero_range(work_image, source_offset, increase_bytes)
 
@@ -208,7 +242,11 @@ def apply_geometry(work_image: Path, before_layout: dict[str, Any], increase_byt
             item["start_sector"] += increase_sectors
         partitions.append(item)
 
+    if simulate_interruption == "gpt-rewrite":
+        raise SimulatedInterruption("gpt-rewrite")
     write_gpt_image(work_image, work_image.stat().st_size, sorted(partitions, key=lambda item: item["number"]))
+    if simulate_interruption == "manifest-update":
+        raise SimulatedInterruption("manifest-update")
     update_work_manifest(work_image, before_layout, increase_bytes, target_label, source_label)
 
 
@@ -254,6 +292,25 @@ def build_checks(
     ]
 
 
+def failure_class_for_error(error: Exception) -> str:
+    if isinstance(error, SimulatedInterruption):
+        if error.stage in {"snapshot"}:
+            return "preflight-refusal"
+        if error.stage == "verification":
+            return "verification-failed"
+        return "geometry-failed"
+    text = str(error).lower()
+    if "test-images" in text or "block device" in text or "system block device" in text:
+        return "path-refusal"
+    if "manifest" in text:
+        return "manifest-invalid"
+    if "command plan is blocked" in text:
+        return "planner-blocked"
+    if "verification" in text:
+        return "verification-failed"
+    return "geometry-failed"
+
+
 def run_geometry_operation(
     image: Path,
     increase_bytes: int,
@@ -261,7 +318,10 @@ def run_geometry_operation(
     source_label: str,
     min_source_free_after_bytes: Optional[int],
     acknowledged: bool,
+    simulate_interruption: Optional[str] = None,
 ) -> dict[str, Any]:
+    if simulate_interruption and simulate_interruption not in INTERRUPTION_STAGES:
+        raise LayoutError(f"unknown interruption stage: {simulate_interruption}")
     safety = safety_assessment(image)
     if safety["denylisted_system_device"]:
         raise LayoutError(f"refusing system block device: {safety['resolved_path']}")
@@ -287,24 +347,45 @@ def run_geometry_operation(
     run_id = f"geometry-{utc_stamp()}-{uuid.uuid4().hex[:8]}"
     run_dir = RUNS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=False)
-    work_image = copy_work_image(image, run_dir)
-
     source_fingerprint_before = sha256_regions(image, fingerprint_regions(before_layout))
     write_json(run_dir / "before-layout.json", before_layout)
     write_json(run_dir / "command-plan.json", command_plan)
 
+    preflight = {
+        "status": "pass",
+        "checks": [
+            {"name": "safety accepted", "status": "pass", "details": safety},
+            {"name": "layout loaded", "status": "pass", "details": {"scenario": before_layout.get("scenario")}},
+            {"name": "command plan ready", "status": "pass", "details": {"mode": "raw_geometry"}},
+        ],
+    }
+
     status = "pass"
     error: str | None = None
+    failure_class: str | None = None
     verification: dict[str, Any]
-    after_layout: dict[str, Any]
+    after_layout: dict[str, Any] = before_layout
+    work_image: Path | None = None
     try:
-        apply_geometry(work_image, before_layout, increase_bytes, target_label, source_label)
+        if simulate_interruption == "snapshot":
+            raise SimulatedInterruption("snapshot")
+        work_image = copy_work_image(image, run_dir)
+        apply_geometry(work_image, before_layout, increase_bytes, target_label, source_label, simulate_interruption)
         after_layout = load_layout_from_image(work_image)
+        if simulate_interruption == "verification":
+            raise SimulatedInterruption("verification")
         verification = compare_layouts(before_layout, after_layout, increase_bytes, target_label, source_label, min_source_free_after_bytes)
     except Exception as exc:  # Preserve failed work image and emit structured failure.
         status = "fail"
         error = str(exc)
-        after_layout = load_layout_from_image(work_image)
+        failure_class = failure_class_for_error(exc)
+        if isinstance(exc, SimulatedInterruption) and work_image:
+            mark_work_manifest_unsafe(work_image, exc.stage)
+        if work_image:
+            try:
+                after_layout = load_layout_from_image(work_image)
+            except Exception:
+                after_layout = before_layout
         verification = {
             "schema": "partition-lab.verify.v1",
             "scenario": before_layout.get("scenario"),
@@ -316,22 +397,37 @@ def run_geometry_operation(
     checks = build_checks(before_layout, after_layout, verification, source_fingerprint_before, source_fingerprint_after)
     if any(check["status"] != "pass" for check in checks):
         status = "fail"
+        failure_class = failure_class or "verification-failed"
+
+    preserved_artifacts = [{"kind": "run-dir", "path": str(run_dir.resolve(strict=False))}]
+    if work_image:
+        preserved_artifacts.append({"kind": "work-image", "path": str(work_image.resolve(strict=False))})
+        preserved_artifacts.append({"kind": "work-manifest", "path": str(manifest_path_for_image(work_image).resolve(strict=False))})
+    postflight = {
+        "status": "pass" if status == "pass" else "fail",
+        "checks": checks,
+    }
 
     result = {
         "schema": SCHEMA_GEOMETRY_RUN,
         "run_id": run_id,
         "status": status,
         "error": error,
+        "failure_class": failure_class,
         "source_image": str(image.resolve(strict=False)),
-        "work_image": str(work_image.resolve(strict=False)),
+        "work_image": str(work_image.resolve(strict=False)) if work_image else None,
         "run_dir": str(run_dir.resolve(strict=False)),
+        "preflight": preflight,
+        "postflight": postflight,
         "input": {
             "target_label": target_label,
             "source_label": source_label,
             "increase_bytes": increase_bytes,
             "minimum_source_free_after_bytes": min_source_free_after_bytes,
+            "simulated_interruption": simulate_interruption,
         },
         "checks": checks,
+        "preserved_artifacts": preserved_artifacts,
         "verification": verification,
     }
     write_json(run_dir / "after-layout.json", after_layout)
@@ -352,6 +448,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Required acknowledgement for lab-only geometry writes to a work copy.",
     )
+    parser.add_argument(
+        "--simulate-interruption",
+        choices=sorted(INTERRUPTION_STAGES),
+        help="Simulate an interruption at a specific geometry-run stage.",
+    )
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     return parser
 
@@ -371,6 +472,7 @@ def main(argv: list[str] | None = None) -> int:
             args.source,
             min_free,
             args.i_understand_this_is_geometry_only,
+            args.simulate_interruption,
         )
     except (OSError, ValueError, LayoutError) as exc:
         parser.error(str(exc))

@@ -287,6 +287,43 @@ class RawImageNormalizationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("geometry write mode requires", result.stderr)
 
+    def test_geometry_run_simulated_interruptions_preserve_artifacts(self) -> None:
+        expected_failure = {
+            "snapshot": "preflight-refusal",
+            "byte-move": "geometry-failed",
+            "gpt-rewrite": "geometry-failed",
+            "manifest-update": "geometry-failed",
+            "verification": "verification-failed",
+        }
+
+        for stage, failure_class in expected_failure.items():
+            with self.subTest(stage=stage):
+                image = self.create_image(f"unittest-interrupt-{stage}")
+                result = self.run_script(
+                    "run_geometry_operation.py",
+                    "--image",
+                    str(image),
+                    "--increase-c",
+                    "8MiB",
+                    "--i-understand-this-is-geometry-only",
+                    "--simulate-interruption",
+                    stage,
+                    "--json",
+                )
+                self.assertEqual(result.returncode, 2, result.stderr)
+                run = json.loads(result.stdout)
+                self.created_dirs.append(Path(run["run_dir"]))
+
+                self.assertEqual(run["status"], "fail")
+                self.assertEqual(run["failure_class"], failure_class)
+                self.assertEqual(run["input"]["simulated_interruption"], stage)
+                self.assertTrue(Path(run["run_dir"]).exists())
+                self.assertTrue(run["preserved_artifacts"])
+                if run["work_image"]:
+                    manifest = json.loads(Path(run["work_image"]).with_suffix(".img.manifest.json").read_text(encoding="utf-8"))
+                    if stage != "verification":
+                        self.assertEqual(manifest["unsafe_state"]["stage"], stage)
+
 
 if __name__ == "__main__":
     unittest.main()
