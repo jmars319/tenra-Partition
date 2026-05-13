@@ -3,6 +3,7 @@ param(
     [string] $Image,
     [string] $IncreaseC = "40G",
     [switch] $DryRun,
+    [switch] $GeometryOnlyLab,
     [switch] $IUnderstandThisIsDestructive
 )
 
@@ -42,6 +43,20 @@ foreach ($line in $inspectionOutput) {
 
 if ($DryRun) {
     Write-PartitionLabLog $logFile "Dry run complete. Real mutation is not implemented in this phase."
+    exit 0
+}
+
+if ($GeometryOnlyLab) {
+    Write-PartitionLabLog $logFile "+ run_geometry_operation.py --image $resolvedImage --increase-c $IncreaseC --json"
+    $geometryOutput = Invoke-PartitionLabPython "run_geometry_operation.py" `
+        --image $resolvedImage `
+        --increase-c $IncreaseC `
+        --i-understand-this-is-geometry-only `
+        --json
+    foreach ($line in $geometryOutput) {
+        Write-Output $line
+        Add-Content -LiteralPath $logFile -Value $line
+    }
     exit 0
 }
 

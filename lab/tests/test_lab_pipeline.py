@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import sys
 import json
+import shutil
 import subprocess
 import unittest
 from pathlib import Path
@@ -42,6 +43,7 @@ class RawImageNormalizationTests(unittest.TestCase):
     def setUp(self) -> None:
         TEST_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
         self.created: list[Path] = []
+        self.created_dirs: list[Path] = []
 
     def tearDown(self) -> None:
         for path in self.created:
@@ -49,6 +51,8 @@ class RawImageNormalizationTests(unittest.TestCase):
                 path.unlink()
             except FileNotFoundError:
                 pass
+        for path in self.created_dirs:
+            shutil.rmtree(path, ignore_errors=True)
 
     def image_path(self, name: str) -> Path:
         image = TEST_IMAGES_DIR / f"{name}.raw.img"
@@ -152,6 +156,36 @@ class RawImageNormalizationTests(unittest.TestCase):
         self.assertTrue(command_plan["modes"]["real_ntfs"]["dry_run_only"])
         self.assertGreater(len(command_plan["modes"]["real_ntfs"]["steps"]), 0)
         self.assertIn("ntfsresize", " ".join(command_plan["modes"]["real_ntfs"]["steps"][1]["command"]))
+
+    def test_geometry_run_mutates_work_copy_and_verifies_result(self) -> None:
+        image = self.create_image("unittest-geometry-run")
+
+        result = self.run_script(
+            "run_geometry_operation.py",
+            "--image",
+            str(image),
+            "--increase-c",
+            "8MiB",
+            "--i-understand-this-is-geometry-only",
+            "--json",
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        run = json.loads(result.stdout)
+        self.created_dirs.append(Path(run["run_dir"]))
+
+        self.assertEqual(run["schema"], "partition-lab.geometry-run.v1")
+        self.assertEqual(run["status"], "pass")
+        self.assertTrue(Path(run["work_image"]).exists())
+        self.assertTrue((Path(run["run_dir"]) / "geometry-run.json").exists())
+        self.assertTrue(all(check["status"] == "pass" for check in run["checks"]))
+
+    def test_geometry_run_refuses_without_acknowledgement(self) -> None:
+        image = self.create_image("unittest-geometry-no-ack")
+
+        result = self.run_script("run_geometry_operation.py", "--image", str(image), "--increase-c", "8MiB", "--json")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("geometry write mode requires", result.stderr)
 
 
 if __name__ == "__main__":

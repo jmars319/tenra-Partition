@@ -12,6 +12,7 @@ INCREASE_C="40G"
 DRY_RUN=0
 ACK=0
 ALLOW_LAB_BLOCK_DEVICE=0
+GEOMETRY_ONLY_LAB=0
 
 usage() {
   cat <<'USAGE'
@@ -24,6 +25,7 @@ Options:
   --image PATH                               Target image. Must be under test-images/.
   --increase-c SIZE                         Amount to add to C. Default: 40G.
   --dry-run                                 Log the intended action without writes.
+  --geometry-only-lab                      Run the lab-only raw geometry executor against a work copy.
   --allow-lab-block-device                  Permit explicitly supplied lab loop devices.
   --i-understand-this-is-destructive         Required for future write mode.
   -h, --help                                Show this help.
@@ -71,6 +73,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --allow-lab-block-device)
       ALLOW_LAB_BLOCK_DEVICE=1
+      shift
+      ;;
+    --geometry-only-lab)
+      GEOMETRY_ONLY_LAB=1
       shift
       ;;
     --i-understand-this-is-destructive)
@@ -129,6 +135,15 @@ run "${INSPECT_ARGS[@]}"
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   printf 'Dry run complete. Real mutation is not implemented in this phase.\n' | tee -a "$LOG_FILE"
+  exit 0
+fi
+
+if [[ "$GEOMETRY_ONLY_LAB" -eq 1 ]]; then
+  run "$SCRIPT_DIR/run_geometry_operation.py" \
+    --image "$RESOLVED_IMAGE" \
+    --increase-c "$INCREASE_C" \
+    --i-understand-this-is-geometry-only \
+    --json
   exit 0
 fi
 
