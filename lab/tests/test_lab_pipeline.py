@@ -254,6 +254,43 @@ class RawImageNormalizationTests(unittest.TestCase):
         self.assertEqual(mbr_check["status"], "blocked")
         self.assertIn("sgdisk-invalid-gpt", {item["id"] for item in mbr_check["blockers"]})
 
+    def test_qemu_img_validation_and_qcow2_conversion_are_safe(self) -> None:
+        image = self.create_image("unittest-qemu-img")
+        run_dir = LAB_ROOT / "runs" / f"unittest-qemu-{uuid.uuid4().hex}"
+        self.created_dirs.append(run_dir)
+        output = run_dir / "converted.qcow2"
+
+        result = self.run_script(
+            "qemu_image_check.py",
+            "--image",
+            str(image),
+            "--convert-qcow2",
+            "--qcow2-output",
+            str(output),
+            "--json",
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        check = json.loads(result.stdout)
+        self.assertEqual(check["schema"], "partition-lab.qemu-image-check.v1")
+        self.assertEqual(check["status"], "pass")
+        self.assertEqual(check["info"]["format"], "raw")
+        self.assertEqual(check["conversion"]["status"], "pass")
+        self.assertEqual(check["conversion"]["info"]["format"], "qcow2")
+        self.assertTrue(check["source_fingerprint"]["unchanged"])
+
+        refused = self.run_script(
+            "qemu_image_check.py",
+            "--image",
+            str(image),
+            "--convert-qcow2",
+            "--qcow2-output",
+            str(TEST_IMAGES_DIR / "refused.qcow2"),
+            "--json",
+        )
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("qcow2 output must be under", refused.stderr)
+
     def test_command_plan_reports_stable_blockers_for_unsafe_scenarios(self) -> None:
         cases = {
             "mbr-layout": "partition-table-not-gpt",
