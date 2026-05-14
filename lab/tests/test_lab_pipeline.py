@@ -335,6 +335,26 @@ class RawImageNormalizationTests(unittest.TestCase):
         else:
             self.assertTrue(plan["blockers"])
 
+    def test_mac_gate_reports_ready_for_windows(self) -> None:
+        result = self.run_script("run_mac_gate.py", "--skip-vm-plan", "--json")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        gate = json.loads(result.stdout)
+        self.created_dirs.append(Path(gate["run_dir"]))
+        batch_report = json.loads(Path(gate["batch_report"]["path"]).read_text(encoding="utf-8"))
+        self.created_dirs.append(Path(batch_report["run_dir"]))
+        for scenario in batch_report["scenarios"]:
+            image = Path(scenario["artifacts"]["image"])
+            manifest = Path(scenario["artifacts"]["manifest"])
+            self.created.append(image)
+            self.created.append(manifest)
+
+        self.assertEqual(gate["schema"], "partition-lab.mac-gate.v1")
+        self.assertEqual(gate["status"], "ready-for-windows")
+        self.assertTrue(gate["checks"]["batch_has_no_failures"])
+        self.assertTrue(gate["checks"]["generated_artifacts_ignored"])
+        self.assertTrue(all(item["ignored"] for item in gate["ignored_artifacts"]))
+
     def test_command_plan_reports_stable_blockers_for_unsafe_scenarios(self) -> None:
         cases = {
             "mbr-layout": "partition-table-not-gpt",
