@@ -22,3 +22,5 @@ jobs:
         run: npm run verify:handoffs
       - name: Run app validation
         run: npm run check
+      - name: Run portable lab gate
+        run: npm run lab:gate:posix

@@ -56,3 +56,9 @@ jobs:
 
       - name: Run portable checks
         run: npm run check
+
+      - name: Run portable lab smoke
+        run: npm run lab:smoke:posix
+
+      - name: Run portable Mac gate
+        run: npm run lab:gate:posix

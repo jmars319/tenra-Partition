@@ -16,6 +16,8 @@
     "install:desktop": "npm run package:desktop && bash ./scripts/install-desktop-app.sh",
     "launch:desktop": "open -n \"/Applications/tenra Partition.app\"",
     "lab:smoke:posix": "bash lab/scripts/smoke_test.sh",
+    "lab:gate:posix": "python3 lab/scripts/run_mac_gate.py --skip-optional-checks --skip-vm-plan",
+    "lab:handoff:posix": "python3 lab/scripts/create_windows_handoff.py --skip-vm-plan",
     "test": "vitest run",
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
