@@ -894,6 +894,46 @@ function LabArtifactCard({ artifact }: { artifact: PartitionLabArtifact }) {
     );
   }
 
+  if (artifact.schema === "partition-lab.mac-gate.v1") {
+    const summary = artifact.batch_report.summary;
+    const blockers = artifact.blockers ?? artifact.vm_plan?.blockers ?? [];
+    return (
+      <article className="lab-artifact-card">
+        <strong>Mac gate · {artifact.status}</strong>
+        <p>{artifact.gate_id}</p>
+        <p>{summary.pass} pass / {summary.blocked} blocked / {summary.fail} fail</p>
+        <p>{artifact.run_dir}</p>
+        <div className="lab-artifact-grid">
+          {blockers.map((item) => (
+            <span className="artifact-blocked" key={item.id}>{item.id}</span>
+          ))}
+          {!blockers.length ? <span className="artifact-pass">ready for Windows handoff</span> : null}
+        </div>
+      </article>
+    );
+  }
+
+  if (artifact.schema === "partition-lab.windows-handoff.v1") {
+    const summary = artifact.batch_report.summary;
+    const commands = artifact.next_windows_commands?.slice(0, 4) ?? [];
+    return (
+      <article className="lab-artifact-card">
+        <strong>Windows handoff · {artifact.status}</strong>
+        <p>{artifact.handoff_id}</p>
+        <p>{summary.pass} pass / {summary.blocked} blocked / {summary.fail} fail</p>
+        <p>{artifact.run_dir}</p>
+        <div className="lab-artifact-grid">
+          {commands.map((item) => (
+            <span className="artifact-pass" key={item.id}>{item.id}</span>
+          ))}
+          {artifact.excluded_large_artifacts?.length ? (
+            <span className="artifact-blocked">{artifact.excluded_large_artifacts.length} image artifact(s) excluded</span>
+          ) : null}
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="lab-artifact-card">
       <strong>Verification · {artifact.verification_status}</strong>

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadPartitionLabArtifact } from "../src/io/partitionLab";
 
 describe("Partition Lab artifact import", () => {
-  it("imports capability, command-plan, geometry-run, verification, batch, and VM artifacts", () => {
+  it("imports capability, command-plan, geometry-run, verification, batch, VM, gate, and handoff artifacts", () => {
     const capabilities = loadPartitionLabArtifact({
       schema: "partition-lab.capabilities.v1",
       host: { platform: "Darwin", machine: "arm64" },
@@ -43,6 +43,21 @@ describe("Partition Lab artifact import", () => {
       blockers: [],
       qemu_command: ["qemu-system-x86_64"],
     });
+    const macGate = loadPartitionLabArtifact({
+      schema: "partition-lab.mac-gate.v1",
+      gate_id: "mac-gate-test",
+      status: "ready-for-windows",
+      run_dir: "lab/runs/mac-gate-test",
+      batch_report: { summary: { pass: 2, blocked: 19, fail: 0 } },
+    });
+    const windowsHandoff = loadPartitionLabArtifact({
+      schema: "partition-lab.windows-handoff.v1",
+      handoff_id: "windows-handoff-test",
+      status: "ready-for-windows",
+      run_dir: "lab/runs/windows-handoff-test",
+      batch_report: { summary: { pass: 2, blocked: 19, fail: 0 } },
+      next_windows_commands: [{ id: "plan-windows-ntfs", command: ["powershell"] }],
+    });
 
     expect(capabilities.schema).toBe("partition-lab.capabilities.v1");
     expect(commandPlan.schema).toBe("partition-lab.command-plan.v1");
@@ -50,6 +65,8 @@ describe("Partition Lab artifact import", () => {
     expect(verification.schema).toBe("partition-lab.verify.v1");
     expect(batch.schema).toBe("partition-lab.batch-report.v1");
     expect(vmPlan.schema).toBe("partition-lab.vm-plan.v1");
+    expect(macGate.schema).toBe("partition-lab.mac-gate.v1");
+    expect(windowsHandoff.schema).toBe("partition-lab.windows-handoff.v1");
   });
 
   it("refuses unknown lab artifact schemas", () => {

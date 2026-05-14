@@ -184,13 +184,51 @@ export interface PartitionLabVmPlan {
   steps?: Array<{ id: string; title: string }>;
 }
 
+export interface PartitionLabMacGate {
+  schema: "partition-lab.mac-gate.v1";
+  gate_id: string;
+  status: string;
+  run_dir: string;
+  batch_report: {
+    summary: {
+      pass: number;
+      blocked: number;
+      fail: number;
+    };
+  };
+  vm_plan?: {
+    status?: string;
+    blockers?: Array<{ id: string; message?: string }>;
+  } | null;
+  blockers?: Array<{ id: string; message?: string }>;
+}
+
+export interface PartitionLabWindowsHandoff {
+  schema: "partition-lab.windows-handoff.v1";
+  handoff_id: string;
+  status: string;
+  run_dir: string;
+  batch_report: {
+    summary: {
+      pass: number;
+      blocked: number;
+      fail: number;
+    };
+  };
+  windows_checklist?: Array<{ id: string; status: string; description?: string }>;
+  next_windows_commands?: Array<{ id: string; description?: string; command?: string[] }>;
+  excluded_large_artifacts?: Array<{ path: string }>;
+}
+
 export type PartitionLabArtifact =
   | PartitionLabCapabilities
   | PartitionLabCommandPlan
   | PartitionLabGeometryRun
   | PartitionLabVerifyResult
   | PartitionLabBatchReport
-  | PartitionLabVmPlan;
+  | PartitionLabVmPlan
+  | PartitionLabMacGate
+  | PartitionLabWindowsHandoff;
 
 export function loadDiskFromPartitionLabExport(input: unknown): Disk {
   if (isPartitionLabDiskLayout(input)) {
@@ -285,6 +323,8 @@ export function loadPartitionLabArtifact(input: unknown): PartitionLabArtifact {
   if (isPartitionLabVerifyResult(input)) return input;
   if (isPartitionLabBatchReport(input)) return input;
   if (isPartitionLabVmPlan(input)) return input;
+  if (isPartitionLabMacGate(input)) return input;
+  if (isPartitionLabWindowsHandoff(input)) return input;
 
   throw new Error("Expected Partition Lab artifact JSON.");
 }
@@ -577,6 +617,30 @@ function isPartitionLabVmPlan(input: unknown): input is PartitionLabVmPlan {
     candidate.schema === "partition-lab.vm-plan.v1" &&
     typeof candidate.plan_id === "string" &&
     typeof candidate.status === "string"
+  );
+}
+
+function isPartitionLabMacGate(input: unknown): input is PartitionLabMacGate {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabMacGate>;
+  return (
+    candidate.schema === "partition-lab.mac-gate.v1" &&
+    typeof candidate.gate_id === "string" &&
+    typeof candidate.status === "string" &&
+    typeof candidate.run_dir === "string" &&
+    Boolean(candidate.batch_report && typeof candidate.batch_report === "object")
+  );
+}
+
+function isPartitionLabWindowsHandoff(input: unknown): input is PartitionLabWindowsHandoff {
+  if (!input || typeof input !== "object") return false;
+  const candidate = input as Partial<PartitionLabWindowsHandoff>;
+  return (
+    candidate.schema === "partition-lab.windows-handoff.v1" &&
+    typeof candidate.handoff_id === "string" &&
+    typeof candidate.status === "string" &&
+    typeof candidate.run_dir === "string" &&
+    Boolean(candidate.batch_report && typeof candidate.batch_report === "object")
   );
 }
 
