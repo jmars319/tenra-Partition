@@ -38,6 +38,22 @@ The report schema is `partition-lab.batch-report.v1`. The expected local shape
 is pass for normal GPT geometry scenarios, blocked for unsupported or unsafe
 scenarios, and zero failed scenarios.
 
+Run the one-command Mac gate:
+
+```bash
+scripts/run_mac_gate.py --json
+```
+
+or the portable CI-safe form:
+
+```bash
+npm run lab:gate:posix
+```
+
+The gate schema is `partition-lab.mac-gate.v1`. A ready Mac result is
+`ready-for-windows` with no failed batch scenarios and all generated artifacts
+ignored by git.
+
 ## Independent Checks
 
 Cross-check GPT geometry against `sgdisk`:
@@ -68,14 +84,41 @@ image under `runs/`, emits the QEMU command against the clone, and records manua
 comparison steps. It does not boot QEMU, click GParted, or mutate the source
 image.
 
+Print a VM plan command without launching QEMU:
+
+```bash
+scripts/launch_vm_plan.py --plan runs/<vm-plan>/vm-plan.json
+```
+
+Launching QEMU requires `--launch --i-understand-this-launches-qemu`. The helper
+does not automate GParted.
+
 On Apple Silicon, the amd64 GParted Live ISO runs through x86_64 emulation. Treat
 that as useful comparison evidence, not a production execution dependency.
 
 ## Carry To Windows
 
+Before moving to Windows, create the handoff bundle:
+
+```bash
+scripts/create_windows_handoff.py --json
+```
+
+or:
+
+```bash
+npm run lab:handoff:posix
+```
+
+The handoff schema is `partition-lab.windows-handoff.v1`. It copies JSON
+evidence into a handoff directory under `runs/` and excludes large raw/qcow2/VHD
+artifacts by default, recording their paths and fingerprints instead.
+
 Before moving to Windows, preserve or import:
 
 - the latest `partition-lab.capabilities.v1`
+- the latest `partition-lab.mac-gate.v1`
+- the latest `partition-lab.windows-handoff.v1`
 - the latest `partition-lab.batch-report.v1`
 - representative `partition-lab.geometry-run.v1` and `partition-lab.verify.v1`
 - optional `partition-lab.sgdisk-check.v1`, `partition-lab.qemu-image-check.v1`, and `partition-lab.vm-plan.v1`

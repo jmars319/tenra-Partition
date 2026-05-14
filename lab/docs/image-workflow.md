@@ -126,6 +126,13 @@ Run the full disposable raw-image matrix:
 scripts/run_scenario_batch.py --json
 ```
 
+Run the final Mac gate and create the Windows handoff bundle:
+
+```bash
+scripts/run_mac_gate.py --json
+scripts/create_windows_handoff.py --json
+```
+
 Generate a GParted Live VM comparison plan:
 
 ```bash
@@ -137,9 +144,24 @@ scripts/vm_plan.py \
 The VM plan clones the source image under `runs/` and emits the QEMU command for
 manual GParted comparison. It does not boot the VM or automate the GParted UI.
 
-Import generated capability, command-plan, geometry-run, verification, batch, or
-VM-plan JSON through the desktop app's Lab artifact import to review results
-without running scripts from the UI.
+Print a VM command without launching QEMU:
+
+```bash
+scripts/launch_vm_plan.py --plan runs/<vm-plan>/vm-plan.json
+```
+
+Plan Windows NTFS work without mutating disks:
+
+```powershell
+.\scripts\plan-windows-ntfs-operation.ps1 `
+  --image .\test-images\normal-c-e-layout.vhdx `
+  --increase-c 40G `
+  --json
+```
+
+Import generated capability, command-plan, geometry-run, verification, batch,
+VM-plan, Mac-gate, or Windows-handoff JSON through the desktop app's Lab
+artifact import to review results without running scripts from the UI.
 
 ## Linux Bash Path
 

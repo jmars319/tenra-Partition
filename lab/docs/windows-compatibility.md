@@ -12,6 +12,7 @@ Use these scripts on Windows:
 - `scripts\create-test-image.ps1`
 - `scripts\reset-test-image.ps1`
 - `scripts\inspect-image.ps1`
+- `scripts\plan-windows-ntfs-operation.ps1`
 - `scripts\run-destructive-image-operation.ps1`
 
 The shared planner and verifier are Python scripts. The PowerShell wrappers exist so day-to-day commands work naturally from Windows PowerShell or PowerShell 7.
@@ -36,6 +37,24 @@ The Windows real-image path uses VHDX:
 Administrator PowerShell is required for VHDX creation, formatting, and read-only VHDX inspection because those operations use Windows disk APIs.
 
 The scripts refuse Windows physical disk paths such as `\\.\PhysicalDrive0`. Real destructive mutation is not implemented.
+
+## First Windows Sequence
+
+Start from a Mac-generated `partition-lab.windows-handoff.v1` bundle, then run:
+
+```powershell
+.\scripts\create-test-image.ps1 -Scenario normal-c-e-layout -Force
+.\scripts\inspect-image.ps1 -Image .\test-images\normal-c-e-layout.vhdx
+.\scripts\plan-windows-ntfs-operation.ps1 `
+  --image .\test-images\normal-c-e-layout.vhdx `
+  --increase-c 40G `
+  --json
+```
+
+`plan-windows-ntfs-operation.ps1` emits
+`partition-lab.windows-ntfs-plan.v1`. It is dry-run-only, includes admin,
+BitLocker, dirty-filesystem, and physical-disk refusal checks, and keeps
+`execution.enabled` false.
 
 macOS development remains supported for mock planning, verification, and portable raw-image creation:
 

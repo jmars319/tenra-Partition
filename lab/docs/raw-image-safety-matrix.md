@@ -22,6 +22,14 @@ The pure-Python lab path is safe-to-test only for disposable raw images under
 | `malformed-manifest` | Inspection refuses before layout normalization. |
 | `missing-manifest` | Inspection refuses before layout normalization. |
 | `too-large-requested-expansion` | Planner blocks with `source-free-insufficient`. |
+| `primary-gpt-header-corrupt` | Inspection refuses because no GPT table can be parsed. |
+| `backup-gpt-header-corrupt` | Manifest validation blocks with `gpt-backup-header-invalid`. |
+| `gpt-entry-crc-mismatch` | Manifest validation blocks with `gpt-entry-crc-mismatch`. |
+| `overlapping-partitions` | Layout validation blocks with `layout-invalid`. |
+| `truncated-image` | Inspection refuses on disk-size mismatch. |
+| `manifest-sector-size-mismatch` | Inspection refuses on manifest sector-size mismatch. |
+| `manifest-disk-size-mismatch` | Inspection refuses on manifest disk-size mismatch. |
+| `manifest-partition-bounds-mismatch` | Inspection refuses on manifest partition bounds mismatch. |
 
 Missing manifests are tested by deleting the generated
 `.raw.img.manifest.json` sidecar before inspection.
@@ -75,5 +83,7 @@ The desktop app can import these read-only lab artifacts:
 - `partition-lab.verify.v1`
 - `partition-lab.batch-report.v1`
 - `partition-lab.vm-plan.v1`
+- `partition-lab.mac-gate.v1`
+- `partition-lab.windows-handoff.v1`
 
 The app displays them for review only. It does not execute lab scripts.

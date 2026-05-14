@@ -52,10 +52,13 @@ Implemented:
 - QEMU image validation and optional raw-to-qcow2 conversion reports with `partition-lab.qemu-image-check.v1`.
 - Full disposable scenario batch reports with `partition-lab.batch-report.v1`.
 - GParted Live VM comparison plans with `partition-lab.vm-plan.v1`, scoped to cloned disposable images only.
+- One-command Mac gates with `partition-lab.mac-gate.v1`.
+- Windows handoff bundles with `partition-lab.windows-handoff.v1`.
+- Windows NTFS dry-run plans with `partition-lab.windows-ntfs-plan.v1`.
 - Guarded geometry-only raw image mutation against per-run work copies under `runs/`.
 - Geometry verification for final C/E layout, payload marker hashes, and source image preservation.
 - Simulated interruption tests for snapshot, byte move, GPT rewrite, manifest update, and verification stages.
-- Desktop import and display for capability, command-plan, geometry-run, verification, batch-report, and VM-plan artifacts.
+- Desktop import and display for capability, command-plan, geometry-run, verification, batch-report, VM-plan, Mac-gate, and Windows-handoff artifacts.
 - A local browser dashboard for selecting fixtures, entering operation inputs, viewing disk layout, and watching the mock process queue.
 - A guarded destructive-mode entrypoint that performs safety checks, delegates only explicit geometry-only lab mode, and refuses real NTFS mutation.
 
@@ -331,6 +334,20 @@ The batch report writes `partition-lab.batch-report.v1` under `runs/` and
 records pass, blocked, and fail counts, blocker IDs, optional `sgdisk`/`qemu-img`
 checks, geometry-run artifacts, and source fingerprint preservation.
 
+Run the Mac gate and Windows handoff:
+
+```bash
+scripts/run_mac_gate.py --json
+scripts/create_windows_handoff.py --json
+```
+
+Portable npm wrappers are also available:
+
+```bash
+npm run lab:gate:posix
+npm run lab:handoff:posix
+```
+
 Generate a GParted Live VM comparison plan:
 
 ```bash
@@ -342,6 +359,12 @@ scripts/vm_plan.py \
 This creates a cloned work image under `runs/`, emits a `partition-lab.vm-plan.v1`
 artifact, and prints the QEMU command. It does not boot the VM or automate
 GParted.
+
+Print a VM command without launching QEMU:
+
+```bash
+scripts/launch_vm_plan.py --plan runs/<vm-plan>/vm-plan.json
+```
 
 Simulate an interrupted run:
 
