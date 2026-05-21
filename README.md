@@ -57,6 +57,15 @@ npm run verify:handoffs
 
 Use the lab scripts when validating documented scenarios rather than product runtime behavior.
 
+## Local Tooling
+
+The shared local machine baseline supports Partition's Tauri/Rust safety work:
+
+- Use `cargo audit`, `cargo deny`, and `sccache` around Rust and Tauri changes.
+- Use `actionlint` before changing GitHub Actions workflows.
+- Use `shellcheck` and `shfmt` when editing lab or verification scripts.
+- Use `osv-scanner` for dependency advisory checks across package manifests.
+
 ## Direction
 
 - Keep the planning surface constrained and inspectable.
