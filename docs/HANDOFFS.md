@@ -6,11 +6,11 @@ tenra Partition stays unique because disk planning and eventual execution safety
 
 - `tenra-partition.operation-plan.v1`.
 - `tenra-partition.safety-report.v1`.
-- `tenra-partition.lab-validation-request.v1`, which must keep `execution.enabled` false.
+- `tenra-partition.lab-validation-request.v1`, which must keep `execution.enabled` false and document the backup-first external-drive gate.
 
 ## Consumes
 
 - `partition-lab.disk-layout.v1` fixture/layout exports.
 - Read-only lab validation requests for replay and disposable-image validation.
 
-Partition should not receive hidden filesystem state from other repos. Every layout, plan, report, and lab request must cross an explicit file or local API boundary.
+Partition should not receive hidden filesystem state from other repos. Every layout, plan, report, and lab request must cross an explicit file or local API boundary. Any future execution handoff must prove a backup destination on an external drive before partition work can be considered.

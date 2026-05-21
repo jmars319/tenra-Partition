@@ -1,10 +1,14 @@
 # Module Manifest
 
-Generated from `tenra Registry/contracts/handoff-catalog.json` by `tenra Registry/scripts/generate-suite-contract-docs.mjs`.
+Generated from `tenra Hub/contracts/handoff-catalog.json` by `tenra Hub/scripts/generate-suite-contract-docs.mjs`.
 
 ## Standalone Mode
 
-Runs as a complete partition planning and lab validation app with local simulation, refusal checks, safety review, and result queues.
+Runs as a complete partition planning and lab validation app with local simulation, refusal checks, safety review, result queues, and no enabled execution path. Future execution work must be backup-first and external-drive-paired.
+
+## Repository Path
+
+`independent/storage-safety/tenra Partition`
 
 ## Required Suite Dependencies
 

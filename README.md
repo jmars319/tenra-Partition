@@ -2,6 +2,8 @@
 
 tenra Partition is a read-only planning, simulation, and lab-validation app. It is designed to help operators reason about workflows and safety boundaries without letting the planning surface mutate live systems.
 
+Future execution work must be backup-first and paired with an external drive. Partition should not gain any destructive operation path unless the workflow first proves where the backup will be written and verifies that the target data can be restored without using the disk being changed.
+
 The project is Windows-aware and lab-oriented, with a clear separation between target workflows, UI exploration, and safety documentation.
 
 ## Operational Purpose
@@ -14,6 +16,8 @@ The project is Windows-aware and lab-oriented, with a clear separation between t
 ## Design Posture
 
 - Read-only first.
+- Backup-first before any future execution path.
+- External-drive-paired for any workflow that could ever mutate partitions.
 - Simulation before execution.
 - Lab documentation alongside implementation.
 - Explicit Windows compatibility considerations.
@@ -38,7 +42,7 @@ package.json    Root scripts for development, checks, and packaging
 
 ## Deployment Posture
 
-Partition is a local desktop and lab-validation project. It should not be connected to live mutation workflows until the read-only boundary, safety model, and workflow execution contracts are deliberately changed.
+Partition is a local desktop and lab-validation project. It should not be connected to live mutation workflows until the read-only boundary, safety model, external-drive backup requirement, and workflow execution contracts are deliberately changed.
 
 ## Working Locally
 
@@ -56,6 +60,7 @@ Use the lab scripts when validating documented scenarios rather than product run
 ## Direction
 
 - Keep the planning surface constrained and inspectable.
+- Require an external backup destination before designing any destructive execution path.
 - Expand lab coverage before adding operational execution.
 - Preserve Windows compatibility as part of the product contract.
 - Make unsupported actions visible to operators.

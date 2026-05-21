@@ -37,4 +37,4 @@ npm run tauri dev
 - Do not hard-code absolute paths from macOS or Linux.
 - Do not call real disk commands from the app.
 - Future disk scanning should start with imported integrated-lab JSON, then a Windows PowerShell Storage module adapter.
-- Future destructive execution must remain outside the UI until the integrated lab harness proves operations against disposable disk images.
+- Future destructive execution must remain outside the UI until the integrated lab harness proves operations and restore paths against disposable disk images with an external-drive backup requirement.

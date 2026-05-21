@@ -47,7 +47,7 @@ import { cloneDisk, getPartitionEnd, sortPartitions } from "./domain/layout";
 const fixtureDisk = loadDiskFromPartitionLabExport(labFixture);
 const fixtureLabMetadata = readPartitionLabMetadata(labFixture);
 const EXECUTION_DISABLED_REASON =
-  "Execution is not available until the integrated lab harness proves this operation against disposable images.";
+  "Execution is not available. Future destructive workflows must first prove a restorable backup on an external drive and pass disposable-image lab validation.";
 
 type ExportFormat = "plan-json" | "report-json" | "summary";
 
