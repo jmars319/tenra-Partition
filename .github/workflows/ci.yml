@@ -26,6 +26,9 @@ jobs:
         with:
           components: rustfmt
 
+      - name: Install lab image tooling
+        run: brew install gptfdisk qemu
+
       - name: Install frontend dependencies
         run: npm ci
 
