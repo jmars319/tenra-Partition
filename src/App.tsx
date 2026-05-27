@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { type ChangeEvent, useMemo, useRef, useState } from "react";
 import "./App.css";
-import labFixture from "../fixtures/partition-lab-ce-layout.json";
 import {
   createLabValidationResult,
   createGuardrailReviewFromLabResult,
@@ -30,6 +29,11 @@ import {
   type PartitionLabValidationResult,
   type PartitionLabMetadata,
 } from "./io/partitionLab";
+import {
+  defaultPartitionLabScenario,
+  partitionLabScenarios,
+  type PartitionLabScenario,
+} from "./io/scenarioCatalog";
 import { planGiveSpaceToTarget } from "./planner/giveSpacePlanner";
 import { simulateOperationPlan } from "./simulation/simulator";
 import {
@@ -44,8 +48,8 @@ import {
 } from "./domain/bytes";
 import { cloneDisk, getPartitionEnd, sortPartitions } from "./domain/layout";
 
-const fixtureDisk = loadDiskFromPartitionLabExport(labFixture);
-const fixtureLabMetadata = readPartitionLabMetadata(labFixture);
+const fixtureDisk = loadDiskFromPartitionLabExport(defaultPartitionLabScenario.layout);
+const fixtureLabMetadata = readPartitionLabMetadata(defaultPartitionLabScenario.layout);
 const EXECUTION_DISABLED_REASON =
   "Execution is not available. Future destructive workflows must first prove a restorable backup on an external drive and pass disposable-image lab validation.";
 
@@ -79,6 +83,7 @@ const labCommands: LabCommand[] = [
 function App() {
   const [disk, setDisk] = useState<Disk>(() => cloneDisk(fixtureDisk));
   const [labMetadata, setLabMetadata] = useState<PartitionLabMetadata>(() => fixtureLabMetadata);
+  const [selectedScenarioId, setSelectedScenarioId] = useState(defaultPartitionLabScenario.id);
   const [desiredGiB, setDesiredGiB] = useState(64);
   const [importError, setImportError] = useState("");
   const [copiedCommandId, setCopiedCommandId] = useState("");
@@ -94,6 +99,8 @@ function App() {
   const labRequestInputRef = useRef<HTMLInputElement | null>(null);
   const labResultInputRef = useRef<HTMLInputElement | null>(null);
   const labArtifactInputRef = useRef<HTMLInputElement | null>(null);
+  const selectedScenario =
+    partitionLabScenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null;
 
   const plan = useMemo(
     () =>
@@ -120,6 +127,7 @@ function App() {
       const json = JSON.parse(await file.text());
       setDisk(loadDiskFromPartitionLabExport(json));
       setLabMetadata(readPartitionLabMetadata(json));
+      setSelectedScenarioId("");
       setImportError("");
     } catch (error) {
       const message =
@@ -182,8 +190,14 @@ function App() {
   }
 
   function resetFixture() {
-    setDisk(cloneDisk(fixtureDisk));
-    setLabMetadata(fixtureLabMetadata);
+    applyScenario(defaultPartitionLabScenario);
+  }
+
+  function applyScenario(scenario: PartitionLabScenario) {
+    setDisk(cloneDisk(loadDiskFromPartitionLabExport(scenario.layout)));
+    setLabMetadata(readPartitionLabMetadata(scenario.layout));
+    setDesiredGiB(scenario.defaultExpansionGiB);
+    setSelectedScenarioId(scenario.id);
     setImportError("");
   }
 
@@ -388,6 +402,12 @@ function App() {
           {importError ? <p className="import-error">{importError}</p> : null}
         </section>
 
+        <ScenarioCatalogPanel
+          scenarios={partitionLabScenarios}
+          selectedScenarioId={selectedScenarioId}
+          onSelect={applyScenario}
+        />
+
         <section className="sidebar-section">
           <h2>Export</h2>
           <div className="button-grid">
@@ -461,6 +481,12 @@ function App() {
           </section>
 
           <aside className="inspector">
+            <ScenarioFocusPanel
+              scenario={selectedScenario}
+              metadata={labMetadata}
+              planStatus={plan.status}
+            />
+
             <section className="surface">
               <SectionHeader title="Workflow" subtitle="Give space from E to C" />
               <label className="input-label" htmlFor="desired-size">
@@ -543,6 +569,106 @@ function App() {
         </section>
       </section>
     </main>
+  );
+}
+
+function ScenarioCatalogPanel({
+  scenarios,
+  selectedScenarioId,
+  onSelect,
+}: {
+  scenarios: PartitionLabScenario[];
+  selectedScenarioId: string;
+  onSelect: (scenario: PartitionLabScenario) => void;
+}) {
+  const groupedScenarios = scenarios.reduce<Record<PartitionLabScenario["category"], PartitionLabScenario[]>>(
+    (groups, scenario) => ({
+      ...groups,
+      [scenario.category]: [...groups[scenario.category], scenario],
+    }),
+    {
+      baseline: [],
+      refusal: [],
+      "recovery-placeholder": [],
+      "table-compatibility": [],
+    },
+  );
+
+  return (
+    <section className="sidebar-section scenario-catalog">
+      <h2>Scenario catalog</h2>
+      {Object.entries(groupedScenarios).map(([category, items]) =>
+        items.length ? (
+          <div className="scenario-group" key={category}>
+            <span>{formatScenarioCategory(category)}</span>
+            {items.map((scenario) => {
+              const selected = scenario.id === selectedScenarioId;
+              return (
+                <button
+                  aria-pressed={selected}
+                  className={`scenario-button${selected ? " scenario-button-active" : ""}`}
+                  key={scenario.id}
+                  type="button"
+                  onClick={() => onSelect(scenario)}
+                >
+                  <strong>{scenario.title}</strong>
+                  <small>{scenario.expectedOutcome} · {scenario.sourceArtifact}</small>
+                </button>
+              );
+            })}
+          </div>
+        ) : null,
+      )}
+    </section>
+  );
+}
+
+function ScenarioFocusPanel({
+  scenario,
+  metadata,
+  planStatus,
+}: {
+  scenario: PartitionLabScenario | null;
+  metadata: PartitionLabMetadata;
+  planStatus: string;
+}) {
+  if (!scenario) {
+    return (
+      <section className="surface scenario-focus">
+        <SectionHeader
+          title="Imported layout"
+          subtitle="Manual JSON import outside the built-in scenario catalog"
+        />
+        <div className="scenario-status-row">
+          <span>{metadata.schema}</span>
+          <strong>{metadata.source}</strong>
+        </div>
+      </section>
+    );
+  }
+
+  const matchesExpectation = scenario.expectedOutcome === planStatus;
+
+  return (
+    <section className="surface scenario-focus">
+      <SectionHeader
+        title="Scenario focus"
+        subtitle={scenario.sourceArtifact}
+      />
+      <div className="scenario-status-row">
+        <span>{scenario.category}</span>
+        <strong>{scenario.title}</strong>
+      </div>
+      <p>{scenario.summary}</p>
+      <div className={matchesExpectation ? "scenario-match" : "scenario-mismatch"}>
+        Expected {scenario.expectedOutcome}; current plan is {planStatus}.
+      </div>
+      <ul>
+        {scenario.proves.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -1093,6 +1219,13 @@ function formatTimestamp(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function formatScenarioCategory(value: string) {
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function downloadFile(filename: string, contents: string, type: string) {

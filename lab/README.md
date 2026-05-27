@@ -59,6 +59,7 @@ Implemented:
 - Geometry verification for final C/E layout, payload marker hashes, and source image preservation.
 - Simulated interruption tests for snapshot, byte move, GPT rewrite, manifest update, and verification stages.
 - Desktop import and display for capability, command-plan, geometry-run, verification, batch-report, VM-plan, Mac-gate, and Windows-handoff artifacts.
+- Desktop scenario catalog for selecting preserved Lab fixtures and app refusal cases without opening the lab scripts directly.
 - A local browser dashboard for selecting fixtures, entering operation inputs, viewing disk layout, and watching the mock process queue.
 - A guarded destructive-mode entrypoint that performs safety checks, delegates only explicit geometry-only lab mode, and refuses real NTFS mutation.
 
