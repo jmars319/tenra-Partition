@@ -22,7 +22,7 @@ export function loadDiskFromPartitionLabExport(input: unknown): Disk {
   if (isPartitionLabDiskLayout(input)) return input.disk;
   if (isPartitionLabGeometryLayout(input)) return diskFromGeometryLayout(input);
   throw new Error(
-    "Expected tenra Partition lab disk layout JSON with schema partition-lab.disk-layout.v1 or partition-lab.layout.v1.",
+    "Expected Partition by Tenra lab disk layout JSON with schema partition-lab.disk-layout.v1 or partition-lab.layout.v1.",
   );
 }
 
@@ -38,18 +38,18 @@ export function readPartitionLabMetadata(input: unknown): PartitionLabMetadata {
     return {
       schema: input.schema,
       capturedAt: new Date().toISOString(),
-      source: input.image?.path ?? input.disk.path ?? `tenra Partition Lab ${input.scenario ?? "layout"}`,
+      source: input.image?.path ?? input.disk.path ?? `Partition by Tenra Lab ${input.scenario ?? "layout"}`,
     };
   }
   throw new Error(
-    "Expected tenra Partition lab disk layout JSON with schema partition-lab.disk-layout.v1 or partition-lab.layout.v1.",
+    "Expected Partition by Tenra lab disk layout JSON with schema partition-lab.disk-layout.v1 or partition-lab.layout.v1.",
   );
 }
 
 export function loadLabValidationRequest(input: unknown): PartitionLabValidationRequest {
   if (!isPartitionLabValidationRequest(input)) {
     throw new Error(
-      "Expected read-only tenra Partition lab validation request JSON with schema tenra-partition.lab-validation-request.v1.",
+      "Expected read-only Partition by Tenra lab validation request JSON with schema tenra-partition.lab-validation-request.v1.",
     );
   }
   return input;
@@ -58,7 +58,7 @@ export function loadLabValidationRequest(input: unknown): PartitionLabValidation
 export function loadLabValidationResult(input: unknown): PartitionLabValidationResult {
   if (!isPartitionLabValidationResult(input)) {
     throw new Error(
-      "Expected tenra Partition lab validation result JSON with schema tenra-partition.lab-validation-result.v1.",
+      "Expected Partition by Tenra lab validation result JSON with schema tenra-partition.lab-validation-result.v1.",
     );
   }
   return input;
@@ -66,7 +66,7 @@ export function loadLabValidationResult(input: unknown): PartitionLabValidationR
 
 export function loadPartitionGuardrailDecision(input: unknown): PartitionGuardrailDecision {
   if (!isPartitionGuardrailDecision(input)) {
-    throw new Error("Expected Guardrail decision JSON returnable to tenra Partition.");
+    throw new Error("Expected Guardrail decision JSON returnable to Partition by Tenra.");
   }
   return input;
 }

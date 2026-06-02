@@ -473,7 +473,7 @@ def build_config(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Create a cross-platform raw tenra Partition Lab disk image.")
+    parser = argparse.ArgumentParser(description="Create a cross-platform raw Partition by Tenra Lab disk image.")
     parser.add_argument("--scenario", default="normal-c-e-layout", help="Scenario name used for default filename.")
     parser.add_argument("--output", help="Output image path. Must be under test-images by default.")
     parser.add_argument("--disk-size", help="Disk image size. Default: 12GiB.")

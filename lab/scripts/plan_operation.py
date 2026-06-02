@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Model the operation queue for expanding C by taking space from E. This script does not write changes."
     )
-    parser.add_argument("--layout", required=True, help="Path to a tenra Partition Lab layout JSON fixture.")
+    parser.add_argument("--layout", required=True, help="Path to a Partition by Tenra Lab layout JSON fixture.")
     parser.add_argument("--increase-c", default="40G", help="Amount to add to C. Binary units are used; default: 40G.")
     parser.add_argument("--target", default="C", help="Target partition label. Default: C.")
     parser.add_argument("--source", default="E", help="Source partition label. Default: E.")

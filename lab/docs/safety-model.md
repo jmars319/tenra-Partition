@@ -1,6 +1,6 @@
 # Safety Model
 
-tenra Partition Lab is for disposable assets only.
+Partition by Tenra Lab is for disposable assets only.
 
 Default behavior is local layout mode. Local layout mode reads JSON layouts and produces plans or verification reports without touching a disk image or block device.
 

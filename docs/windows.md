@@ -1,6 +1,6 @@
 # Windows Development
 
-Windows is the primary target for tenra Partition. macOS development is supported, but new code should be checked against Windows assumptions before it lands.
+Windows is the primary target for Partition by Tenra. macOS development is supported, but new code should be checked against Windows assumptions before it lands.
 
 ## Required Tooling
 

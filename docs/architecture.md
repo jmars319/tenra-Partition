@@ -1,6 +1,6 @@
 # Architecture
 
-tenra Partition starts as a read-only planner, simulator, and integrated lab harness.
+Partition by Tenra starts as a read-only planner, simulator, and integrated lab harness.
 
 ## Modules
 
@@ -8,7 +8,7 @@ tenra Partition starts as a read-only planner, simulator, and integrated lab har
 - `src/safety`: safety checks for filesystem support, mounted/encrypted/dirty flags, partition table support, alignment, adjacency, and shrink capacity.
 - `src/planner`: workflow-specific planner for giving space from `E:` to `C:`.
 - `src/simulation`: in-memory operation application and final layout validation.
-- `src/io`: lab JSON import and tenra Partition export helpers.
+- `src/io`: lab JSON import and Partition by Tenra export helpers.
 - `src-tauri`: Rust Tauri shell. Execution is explicitly disabled.
 - `lab`: integrated validation harness for local layouts, raw images, Windows VHDX scripts, inspection, smoke tests, and guarded destructive-mode refusal.
 

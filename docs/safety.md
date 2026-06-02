@@ -1,6 +1,6 @@
 # Safety Notes
 
-tenra Partition is not production-safe partitioning software. The current implementation is a read-only visualizer, operation planner, simulator, and integrated lab harness.
+Partition by Tenra is not production-safe partitioning software. The current implementation is a read-only visualizer, operation planner, simulator, and integrated lab harness.
 
 Future execution must be designed as backup-first and external-drive-paired. A destructive workflow should not become available unless the operator has a verified backup destination outside the disk being changed and the lab harness can prove the restore path against disposable media.
 

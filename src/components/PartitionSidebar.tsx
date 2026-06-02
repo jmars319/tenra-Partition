@@ -40,7 +40,7 @@ export function PartitionSidebar({
           TP
         </div>
         <div>
-          <h1>tenra Partition</h1>
+          <h1>Partition by Tenra</h1>
           <p>Read-only planner</p>
         </div>
       </div>

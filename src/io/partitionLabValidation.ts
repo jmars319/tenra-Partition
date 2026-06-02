@@ -96,7 +96,7 @@ export function createGuardrailReviewFromLabResult(input: {
 
 export function createHumanReadableSummary(plan: OperationPlan): string {
   const lines = [
-    "tenra Partition operation summary",
+    "Partition by Tenra operation summary",
     "",
     `Workflow: Give ${formatBytes(plan.requestedExpansionBytes)} from E: to C:`,
     `Status: ${plan.status}`,

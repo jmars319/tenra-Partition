@@ -46,7 +46,7 @@ describe("lab validation request import", () => {
         ...request,
         execution: { enabled: true, reason: "unsafe" },
       }),
-    ).toThrow(/read-only tenra Partition lab validation request/);
+    ).toThrow(/read-only Partition by Tenra lab validation request/);
   });
 });
 
@@ -119,6 +119,6 @@ describe("lab validation result handoffs", () => {
         decision: "allow",
         sourceReturn: { ...baseDecision.sourceReturn, app: "align" },
       }),
-    ).toThrow(/returnable to tenra Partition/);
+    ).toThrow(/returnable to Partition by Tenra/);
   });
 });

@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "package:desktop": "npm run tauri -- build --bundles app",
     "install:desktop": "npm run package:desktop && bash ./scripts/install-desktop-app.sh",
-    "launch:desktop": "open -n \"/Applications/tenra Partition.app\"",
+    "launch:desktop": "open -n \"/Applications/Partition by Tenra.app\"",
     "lab:smoke:posix": "bash lab/scripts/smoke_test.sh",
     "lab:gate:posix": "python3 lab/scripts/run_mac_gate.py --skip-optional-checks --skip-vm-plan",
     "lab:handoff:posix": "python3 lab/scripts/create_windows_handoff.py --skip-vm-plan",
@@ -43,5 +43,6 @@
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vitest": "^4.1.5"
-  }
+  },
+  "description": "Partition by Tenra is a read-only partition planning, simulation, and lab validation app."
 }

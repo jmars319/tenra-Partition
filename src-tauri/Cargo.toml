@@ -1,7 +1,7 @@
 [package]
 name = "tenra-partition"
 version = "0.1.0"
-description = "tenra Partition read-only planning, simulation, and lab validation app"
+description = "Partition by Tenra read-only planning, simulation, and lab validation app"
 authors = ["tenra"]
 edition = "2021"
 

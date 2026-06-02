@@ -1,6 +1,6 @@
-# tenra Partition
+# Partition by Tenra
 
-tenra Partition is a read-only planning, simulation, and lab-validation app. It is designed to help operators reason about workflows and safety boundaries without letting the planning surface mutate live systems.
+Partition by Tenra is a read-only planning, simulation, and lab-validation app. It is designed to help operators reason about workflows and safety boundaries without letting the planning surface mutate live systems.
 
 Future execution work must be backup-first and paired with an external drive. Partition should not gain any destructive operation path unless the workflow first proves where the backup will be written and verifies that the target data can be restored without using the disk being changed.
 

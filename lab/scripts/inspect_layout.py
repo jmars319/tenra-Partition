@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inspect a tenra Partition Lab layout JSON fixture."""
+"""Inspect a Partition by Tenra Lab layout JSON fixture."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from partitionlab_common import (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Print a human or JSON summary of a tenra Partition Lab layout fixture.")
+    parser = argparse.ArgumentParser(description="Print a human or JSON summary of a Partition by Tenra Lab layout fixture.")
     parser.add_argument("layout", help="Layout JSON path.")
     parser.add_argument("--json", action="store_true", help="Emit normalized machine-readable JSON.")
     return parser

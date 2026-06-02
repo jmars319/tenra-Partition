@@ -14,7 +14,7 @@ Runs as a complete partition planning and lab validation app with local simulati
 
 ## Repository Path
 
-`independent/storage-safety/tenra Partition`
+`independent/storage-safety/Partition by Tenra`
 
 ## Accepted Inputs
 

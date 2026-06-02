@@ -134,7 +134,7 @@ def compare_layouts(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Verify mock or inspected layouts against the tenra Partition Lab target workflow.")
+    parser = argparse.ArgumentParser(description="Verify mock or inspected layouts against the Partition by Tenra Lab target workflow.")
     parser.add_argument("--before", required=True, help="Before layout JSON.")
     parser.add_argument("--after", help="After layout JSON. If omitted, a mock after-layout is simulated from --before.")
     parser.add_argument("--increase-c", default="40G", help="Expected amount added to C. Default: 40G.")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local browser UI for tenra Partition Lab.
+"""Local browser UI for Partition by Tenra Lab.
 
 This server is intentionally local-only by default. It exposes mock planning and
 verification APIs, but it does not run destructive operations.
@@ -219,7 +219,7 @@ class LabUiHandler(BaseHTTPRequestHandler):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run the local tenra Partition Lab UI.")
+    parser = argparse.ArgumentParser(description="Run the local Partition by Tenra Lab UI.")
     parser.add_argument("--host", default="127.0.0.1", help="Bind host. Default: 127.0.0.1.")
     parser.add_argument("--port", type=int, default=8765, help="Bind port. Default: 8765.")
     parser.add_argument("--open", action="store_true", help="Open the UI in a browser.")
@@ -234,14 +234,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print_json({"url": url, "host": args.host, "port": server.server_port})
     else:
-        print(f"tenra Partition Lab UI running at {url}")
+        print(f"Partition by Tenra Lab UI running at {url}")
         print("Press Ctrl+C to stop.")
     if args.open:
         webbrowser.open(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopping tenra Partition Lab UI.")
+        print("\nStopping Partition by Tenra Lab UI.")
     finally:
         server.server_close()
     return 0

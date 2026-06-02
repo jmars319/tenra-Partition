@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Shared model helpers for tenra Partition Lab scripts."""
+"""Shared model helpers for Partition by Tenra Lab scripts."""
 
 from __future__ import annotations
 

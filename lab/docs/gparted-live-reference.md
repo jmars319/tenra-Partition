@@ -1,6 +1,6 @@
 # GParted Live Reference
 
-This note records how the local GParted Live ISO can help move tenra Partition
+This note records how the local GParted Live ISO can help move Partition by Tenra
 from a read-only planner toward real disposable-image validation.
 
 ## Inspected Asset
@@ -26,13 +26,13 @@ Allowed:
 - Invoke installed command-line tools in isolated lab environments.
 - Boot the ISO in a VM against disposable disk images when QEMU or another VM
   runner is available.
-- Compare tenra Partition plans with independent GParted Live behavior.
+- Compare Partition by Tenra plans with independent GParted Live behavior.
 
 Avoid unless there is an explicit licensing plan:
 
 - Copying GParted application source into this repository.
 - Linking directly against GPL partition libraries from the Tauri app.
-- Bundling the GParted Live ISO or its binaries as part of tenra Partition.
+- Bundling the GParted Live ISO or its binaries as part of Partition by Tenra.
 
 GParted is GPL-2.0-or-later. GNU Parted and libparted are GPL-3.0-or-later, and
 libparted is not LGPL. Treat them as separate tools or a separate lab image
@@ -63,7 +63,7 @@ For the current C/E NTFS workflow, the immediate reference stack is smaller:
 
 ## Operation Mapping
 
-The current tenra Partition workflow already matches the core shape:
+The current Partition by Tenra workflow already matches the core shape:
 
 ```text
 Initial: [C: NTFS][E: NTFS with free space]
@@ -100,7 +100,7 @@ mode until the lab can prove interruption recovery against disposable images.
    writes.
 6. Enable destructive mode only for disposable images under `test-images/`, with
    an image snapshot, explicit acknowledgement, post-checks, and logs.
-7. Decide separately whether tenra Partition should ever execute against
+7. Decide separately whether Partition by Tenra should ever execute against
    physical disks. That is not implied by the GParted Live reference.
 
 ## Design Lessons To Preserve

@@ -1,6 +1,6 @@
 # Local UI
 
-tenra Partition Lab includes a small local browser dashboard. It is not the future partition manager GUI. It is an operator surface for the lab harness.
+Partition by Tenra Lab includes a small local browser dashboard. It is not the future partition manager GUI. It is an operator surface for the lab harness.
 
 Start it on Windows:
 

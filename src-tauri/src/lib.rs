@@ -5,7 +5,7 @@ use tauri::{
     Manager, Runtime,
 };
 
-const APP_NAME: &str = "tenra Partition";
+const APP_NAME: &str = "Partition by Tenra";
 const MENU_SETTINGS: &str = "settings";
 const MENU_CLOSE_WINDOW: &str = "close-window";
 const MENU_QUIT: &str = "quit";
@@ -54,7 +54,7 @@ pub fn run() {
             supported_scanner_adapters
         ])
         .build(tauri::generate_context!())
-        .expect("error while building tenra Partition");
+        .expect("error while building Partition by Tenra");
 
     app.run(|app_handle, event| match event {
         #[cfg(target_os = "macos")]

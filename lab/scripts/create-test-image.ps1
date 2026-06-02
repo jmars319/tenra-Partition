@@ -29,7 +29,7 @@ if ([string]::IsNullOrWhiteSpace($Output)) {
 $resolvedOutput = Assert-PartitionLabPathUnderTestImages $Output
 $logFile = New-PartitionLabLogFile "create_windows_$Scenario"
 
-Write-PartitionLabLog $logFile "tenra Partition Lab Windows image creation"
+Write-PartitionLabLog $logFile "Partition by Tenra Lab Windows image creation"
 Write-PartitionLabLog $logFile "scenario=$Scenario"
 Write-PartitionLabLog $logFile "output=$resolvedOutput"
 Write-PartitionLabLog $logFile "disk_size=$DiskSize c_size=$CSize e_size=$ESize partition_table=$PartitionTable"

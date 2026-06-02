@@ -1,7 +1,7 @@
-# tenra Partition Lab Harness
+# Partition by Tenra Lab Harness
 
-The tenra Partition lab harness is the destructive-testing and layout-validation
-area inside the main tenra Partition app. It does not try to be production
+The Partition by Tenra lab harness is the destructive-testing and layout-validation
+area inside the main Partition by Tenra app. It does not try to be production
 software and it does not make the desktop app safe for real disk mutation.
 
 Windows compatibility is a Day 1 requirement. The primary script surface is PowerShell plus Python, and the primary real-image format on Windows is disposable VHDX under `test-images/`. Bash/Linux tooling is optional secondary support.
@@ -73,7 +73,7 @@ Not implemented yet:
 
 ## Safety Model
 
-tenra Partition Lab defaults to local JSON layouts. The scripts must not operate on real physical disks by default.
+Partition by Tenra Lab defaults to local JSON layouts. The scripts must not operate on real physical disks by default.
 
 Guardrails:
 

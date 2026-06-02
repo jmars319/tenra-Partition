@@ -234,7 +234,7 @@ def discover_capabilities() -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Discover tenra Partition Lab host capabilities.")
+    parser = argparse.ArgumentParser(description="Discover Partition by Tenra Lab host capabilities.")
     parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON.")
     return parser
 

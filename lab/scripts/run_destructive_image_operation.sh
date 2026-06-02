@@ -124,7 +124,7 @@ if [[ "$DRY_RUN" -eq 0 && "$ACK" -ne 1 ]]; then
   die "write mode requires --i-understand-this-is-destructive"
 fi
 
-printf 'tenra Partition Lab destructive guard\n' | tee -a "$LOG_FILE"
+printf 'Partition by Tenra Lab destructive guard\n' | tee -a "$LOG_FILE"
 printf 'target=%s\nincrease_c=%s\ndry_run=%s\n' "$RESOLVED_IMAGE" "$INCREASE_C" "$DRY_RUN" | tee -a "$LOG_FILE"
 
 INSPECT_ARGS=("$SCRIPT_DIR/inspect_image.py" --image "$RESOLVED_IMAGE" --json)

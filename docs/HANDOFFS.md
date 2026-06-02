@@ -1,6 +1,6 @@
-# tenra Partition Handoffs
+# Partition by Tenra Handoffs
 
-tenra Partition stays unique because disk planning and eventual execution safety are specialized and high-risk.
+Partition by Tenra stays unique because disk planning and eventual execution safety are specialized and high-risk.
 
 ## Produces
 

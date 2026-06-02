@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for the tenra Partition disposable-image lab pipeline."""
+"""Regression tests for the Partition by Tenra disposable-image lab pipeline."""
 
 from __future__ import annotations
 

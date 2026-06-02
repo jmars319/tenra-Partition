@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="tenra Partition"
+APP_NAME="Partition by Tenra"
 SOURCE_APP="src-tauri/target/release/bundle/macos/${APP_NAME}.app"
 TARGET_APP="/Applications/${APP_NAME}.app"
-LEGACY_APP="/Applications/tenra Partition Studio.app"
+LEGACY_APP="/Applications/Partition by Tenra Studio.app"
 
 if [[ ! -d "$SOURCE_APP" ]]; then
   echo "Missing built app at ${SOURCE_APP}" >&2
