@@ -1,7 +1,7 @@
 {
   "schema": "partition-lab.disk-layout.v1",
   "capturedAt": "2026-05-02T20:15:00.000Z",
-  "source": "tenra Partition Lab mock",
+  "source": "tenra Partition local lab safety case",
   "disk": {
     "id": "disk0",
     "name": "Disk 0",

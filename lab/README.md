@@ -1,6 +1,6 @@
 # tenra Partition Lab Harness
 
-The tenra Partition lab harness is the destructive-testing and fixture-testing
+The tenra Partition lab harness is the destructive-testing and layout-validation
 area inside the main tenra Partition app. It does not try to be production
 software and it does not make the desktop app safe for real disk mutation.
 
@@ -36,10 +36,10 @@ The required operation is:
 
 Implemented:
 
-- Repository structure for fixtures, scripts, docs, logs, and test images.
-- Mock JSON fixtures for the required scenarios.
+- Repository structure for layouts, scripts, docs, logs, and test images.
+- Local lab JSON layouts for the required scenarios.
 - A write-free planner for the C/E workflow.
-- A mock verification model for expected post-operation geometry.
+- A read-only verification model for expected post-operation geometry.
 - Windows PowerShell entrypoints for planning, verification, image creation, inspection, reset, smoke tests, and guarded destructive mode.
 - Windows VHDX image creation with `diskpart`, NTFS formatting, and synthetic data population.
 - Cross-platform raw image creation under `test-images/` using pure Python.
@@ -59,8 +59,8 @@ Implemented:
 - Geometry verification for final C/E layout, payload marker hashes, and source image preservation.
 - Simulated interruption tests for snapshot, byte move, GPT rewrite, manifest update, and verification stages.
 - Desktop import and display for capability, command-plan, geometry-run, verification, batch-report, VM-plan, Mac-gate, and Windows-handoff artifacts.
-- Desktop scenario catalog for selecting preserved Lab fixtures and app refusal cases without opening the lab scripts directly.
-- A local browser dashboard for selecting fixtures, entering operation inputs, viewing disk layout, and watching the mock process queue.
+- Desktop scenario catalog for selecting preserved Lab layouts and app refusal cases without opening the lab scripts directly.
+- A local browser dashboard for selecting layouts, entering operation inputs, viewing disk layout, and watching the read-only process queue.
 - A guarded destructive-mode entrypoint that performs safety checks, delegates only explicit geometry-only lab mode, and refuses real NTFS mutation.
 
 Not implemented yet:
@@ -73,7 +73,7 @@ Not implemented yet:
 
 ## Safety Model
 
-tenra Partition Lab defaults to mock JSON fixtures. The scripts must not operate on real physical disks by default.
+tenra Partition Lab defaults to local JSON layouts. The scripts must not operate on real physical disks by default.
 
 Guardrails:
 
@@ -89,12 +89,12 @@ Guardrails:
 
 Modes are intentionally separate:
 
-- Mock mode: JSON fixtures only. No disk images.
+- Local layout mode: JSON layouts only. No disk images.
 - Windows image mode: VHDX files under `test-images/`.
 - Raw image mode: regular raw image files under `test-images/`.
 - Raw geometry mode: lab-only GPT geometry mutation on a work copy, with no real NTFS shrink/grow.
 - Loop-device mode: disposable loop devices attached to lab images only.
-- VM comparison mode: command-plan scaffold only, against cloned disposable images.
+- VM comparison mode: command-plan preview only, against cloned disposable images.
 
 Safe-to-test currently means safe to test the planner, normalization, dry-run command planning, and geometry-only raw image mutation against disposable image work copies. It does not mean safe for physical disks or real NTFS mutation.
 
@@ -112,7 +112,7 @@ On macOS/Linux:
 scripts/start_ui.sh --open
 ```
 
-The UI runs locally at `http://127.0.0.1:8765/` by default. It accepts planner inputs, shows the selected mock disk layout, displays blockers and verification checks, and animates the intended operation queue. It does not run destructive operations.
+The UI runs locally at `http://127.0.0.1:8765/` by default. It accepts planner inputs, shows the selected local disk layout, displays blockers and verification checks, and animates the intended operation queue. It does not run destructive operations.
 
 Windows PowerShell:
 
@@ -127,7 +127,7 @@ The wrappers call the shared Python core, so the same planner and verifier run o
 
 macOS/Linux shell:
 
-Inspect a fixture:
+Inspect a local layout:
 
 ```bash
 scripts/inspect_layout.py fixtures/normal-c-e-layout.json
@@ -145,7 +145,7 @@ Emit the plan as JSON:
 scripts/plan_operation.py --layout fixtures/normal-c-e-layout.json --increase-c 40G --json
 ```
 
-Verify the mock expected result:
+Verify the read-only expected result:
 
 ```bash
 scripts/verify_layout.py --before fixtures/normal-c-e-layout.json --increase-c 40G
@@ -183,7 +183,7 @@ scripts/qemu_image_check.py --image test-images/normal-c-e-layout.raw.img --json
 
 ## Fixtures
 
-The mock fixtures are in `fixtures/`:
+The local lab layouts are in `fixtures/`:
 
 - `normal-c-e-layout.json`
 - `e-has-insufficient-free-space.json`
@@ -194,12 +194,12 @@ The mock fixtures are in `fixtures/`:
 - `non-adjacent-free-space.json`
 - `interrupted-operation-placeholder.json`
 
-Each fixture describes:
+Each local lab layout describes:
 
 - Disk label, sector size, and alignment.
 - Partitions and free regions.
-- Start sector, end sector, size, filesystem, mount status, and mock used/free space.
-- Mock file lists for validating that E data survives the modeled operation.
+- Start sector, end sector, size, filesystem, mount status, and local-lab used/free space.
+- Local file lists for validating that E data survives the modeled operation.
 
 ## Create A Disposable Image On Windows
 

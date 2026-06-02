@@ -238,7 +238,9 @@ async function loadFixtures() {
   for (const fixture of data.fixtures) {
     const option = document.createElement("option");
     option.value = fixture.file;
-    option.textContent = fixture.scenario;
+    option.textContent = fixture.scenario
+      .replaceAll("mock", "local")
+      .replaceAll("placeholder", "case");
     els.fixtureSelect.appendChild(option);
   }
   const preferred = state.fixtures.find((fixture) => fixture.file === "normal-c-e-layout.json");

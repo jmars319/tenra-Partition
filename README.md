@@ -38,7 +38,7 @@ package.json    Root scripts for development, checks, and packaging
 - The desktop app is the active surface.
 - The current scope is planning, simulation, and lab validation.
 - The lab harness documents target workflows, UI expectations, image workflow notes, and not-yet-implemented behavior.
-- The app includes a built-in scenario catalog that exposes preserved Lab fixtures and refusal cases directly in the planner UI.
+- The app includes a built-in scenario catalog that exposes preserved Lab layouts and refusal cases directly in the planner UI.
 - Safety boundaries are documented as part of the product, not treated as future cleanup.
 
 ## Deployment Posture

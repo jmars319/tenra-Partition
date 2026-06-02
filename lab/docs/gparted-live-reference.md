@@ -112,7 +112,7 @@ mode until the lab can prove interruption recovery against disposable images.
   filesystems, and mounted volumes.
 - The UI planner should remain separate from the mutation backend.
 - Lab validation must prove the exact geometry and data-survival contract before
-  any operation leaves mock mode.
+  any operation leaves local layout mode.
 
 ## References
 

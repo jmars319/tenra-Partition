@@ -22,8 +22,11 @@
     "rust:test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "rust:fmt": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
     "verify:handoffs": "node ./scripts/validate-handoffs.mjs",
-    "check": "npm run typecheck && npm run test && npm run rust:fmt && npm run rust:test && npm run build",
-    "tauri": "tauri"
+    "check": "npm run typecheck && npm run test && npm run rust:fmt && npm run rust:test && npm run build && npm run audit:maintainability && npm run budget:bundle",
+    "tauri": "tauri",
+    "analyze:bundle": "node scripts/analyze-build.mjs",
+    "budget:bundle": "node scripts/analyze-build.mjs --strict",
+    "audit:maintainability": "node scripts/audit-maintainability.mjs --strict"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.0",

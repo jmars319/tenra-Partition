@@ -56,7 +56,7 @@ Start from a Mac-generated `partition-lab.windows-handoff.v1` bundle, then run:
 BitLocker, dirty-filesystem, and physical-disk refusal checks, and keeps
 `execution.enabled` false.
 
-macOS development remains supported for mock planning, verification, and portable raw-image creation:
+macOS development remains supported for local layout planning, verification, and portable raw-image creation:
 
 ```powershell
 .\scripts\create-raw-image.ps1 --scenario normal-c-e-layout

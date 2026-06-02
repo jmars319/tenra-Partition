@@ -28,7 +28,7 @@ pub struct ScannerAdapterStatus {
 impl ScannerAdapterStatus {
     pub fn mock_json() -> Self {
         Self {
-            name: "Mock JSON".to_string(),
+            name: "Local lab JSON".to_string(),
             available: true,
             mode: "read-only".to_string(),
         }

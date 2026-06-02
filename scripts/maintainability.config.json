@@ -1,0 +1,29 @@
+{
+  "label": "tenra-partition",
+  "maxImplementationFileLines": 525,
+  "maxStyleFileLines": 400,
+  "maxAppShellLines": 350,
+  "maxDesktopMainLines": 450,
+  "maxDomainBarrelLines": 250,
+  "nearBudgetMarginLines": 25,
+  "nearBudgetMarginKb": 4,
+  "initialBundleBudgetKb": 265,
+  "requireBuiltAssets": true,
+  "assetDirs": ["dist/assets"],
+  "sourceRoots": ["src", "src-tauri/src", "scripts", "lab"],
+  "sourceExtensions": [".ts", ".tsx", ".js", ".mjs", ".rs", ".css", ".py", ".sh", ".ps1"],
+  "allowedGenerated": ["src/vite-env.d.ts"],
+  "contractSnapshotPath": "scripts/contracts/maintainability-contracts.json",
+  "specificFileBudgets": {
+    "lab/scripts/inspect_image.py": 635,
+    "lab/scripts/create_image.py": 630,
+    "lab/scripts/partitionlab_common.py": 550,
+    "lab/tests/test_lab_pipeline.py": 600,
+    "lab/ui/styles.css": 625
+  },
+  "assetBudgets": [
+    { "path": "src-tauri/icons/icon.icns", "maxBytes": 710000 },
+    { "path": "src-tauri/icons/icon.png", "maxBytes": 200000 },
+    { "path": "src-tauri/icons/icon.ico", "maxBytes": 155000 }
+  ]
+}

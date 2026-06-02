@@ -1,0 +1,71 @@
+@media (max-width: 1120px) {
+  body {
+    min-width: 0;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .plan-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar,
+  .workspace,
+  .plan-grid,
+  .primary-column,
+  .inspector,
+  .surface,
+  .topbar {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sidebar {
+    min-height: auto;
+  }
+
+  .workspace {
+    overflow: hidden;
+    padding: 0.75rem;
+  }
+
+  .topbar,
+  .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .section-header p {
+    max-width: none;
+    text-align: left;
+  }
+
+  .disk-map {
+    overflow-x: auto;
+  }
+
+  .disk-block {
+    min-width: 108px;
+  }
+
+  .partition-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    padding: 1rem;
+  }
+
+  .topbar h2 {
+    font-size: 1.1rem;
+  }
+
+  .partition-card header,
+  .partition-card footer {
+    flex-direction: column;
+  }
+}

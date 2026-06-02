@@ -16,9 +16,10 @@ export type PartitionScenarioOutcome = "ready" | "refused";
 export interface PartitionLabScenario {
   id: string;
   title: string;
-  category: "baseline" | "refusal" | "table-compatibility" | "recovery-placeholder";
+  category: "baseline" | "refusal" | "table-compatibility" | "recovery-review";
   summary: string;
   sourceArtifact: string;
+  sourceLabel?: string;
   defaultExpansionGiB: number;
   expectedOutcome: PartitionScenarioOutcome;
   proves: string[];
@@ -28,10 +29,11 @@ export interface PartitionLabScenario {
 export const partitionLabScenarios: PartitionLabScenario[] = [
   {
     id: "app-mock-c-e-layout",
-    title: "Mock C/E layout",
+    title: "Local C/E lab layout",
     category: "baseline",
-    summary: "Current app-owned fixture with C followed by E and a recovery partition.",
+    summary: "Current app-owned local lab layout with C followed by E and a recovery partition.",
     sourceArtifact: "fixtures/partition-lab-ce-layout.json",
+    sourceLabel: "App local C/E layout",
     defaultExpansionGiB: 64,
     expectedOutcome: "ready",
     proves: [
@@ -46,6 +48,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "baseline",
     summary: "Preserved Partition-Lab raw-image fixture with immediately adjacent C and E.",
     sourceArtifact: "lab/fixtures/normal-c-e-layout.json",
+    sourceLabel: "Lab normal C/E layout",
     defaultExpansionGiB: 40,
     expectedOutcome: "ready",
     proves: [
@@ -60,6 +63,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "refusal",
     summary: "App-owned refusal fixture where the source partition is not immediately after C.",
     sourceArtifact: "fixtures/refusal-non-adjacent.json",
+    sourceLabel: "App non-adjacent safety case",
     defaultExpansionGiB: 64,
     expectedOutcome: "refused",
     proves: [
@@ -74,6 +78,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "refusal",
     summary: "Mounted, encrypted, and dirty filesystem flags are all visible as blockers.",
     sourceArtifact: "fixtures/refusal-unsafe-flags.json",
+    sourceLabel: "App unsafe-flag safety case",
     defaultExpansionGiB: 64,
     expectedOutcome: "refused",
     proves: [
@@ -88,6 +93,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "table-compatibility",
     summary: "Legacy table and unknown filesystem metadata are refused until support is explicit.",
     sourceArtifact: "fixtures/refusal-mbr-unknown-fs.json",
+    sourceLabel: "MBR and unknown-filesystem case",
     defaultExpansionGiB: 64,
     expectedOutcome: "refused",
     proves: [
@@ -102,6 +108,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "refusal",
     summary: "Original lab fixture where E cannot safely donate the requested space.",
     sourceArtifact: "lab/fixtures/e-has-insufficient-free-space.json",
+    sourceLabel: "Lab insufficient-space case",
     defaultExpansionGiB: 40,
     expectedOutcome: "refused",
     proves: [
@@ -112,10 +119,11 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
   },
   {
     id: "lab-dirty-filesystem",
-    title: "Dirty filesystem placeholder",
+    title: "Dirty filesystem safety case",
     category: "refusal",
-    summary: "Original placeholder for a repair-required NTFS filesystem.",
+    summary: "Repair-required NTFS filesystem case that must stay blocked.",
     sourceArtifact: "lab/fixtures/dirty-filesystem-placeholder.json",
+    sourceLabel: "Dirty filesystem safety case",
     defaultExpansionGiB: 40,
     expectedOutcome: "refused",
     proves: [
@@ -126,15 +134,16 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
   },
   {
     id: "lab-encrypted-filesystem",
-    title: "Encrypted filesystem placeholder",
+    title: "Encrypted filesystem safety case",
     category: "refusal",
-    summary: "Original BitLocker-like placeholder that must stay blocked by default.",
+    summary: "BitLocker-like filesystem case that must stay blocked by default.",
     sourceArtifact: "lab/fixtures/encrypted-filesystem-placeholder.json",
+    sourceLabel: "Encrypted filesystem safety case",
     defaultExpansionGiB: 40,
     expectedOutcome: "refused",
     proves: [
       "Encrypted volumes are refused unless a later policy explicitly supports them.",
-      "Lab placeholders can be selected and reviewed from the app.",
+      "Lab safety cases can be selected and reviewed from the app.",
     ],
     layout: labEncryptedFilesystem,
   },
@@ -144,6 +153,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "baseline",
     summary: "Original fixture showing that free space after E does not help C directly.",
     sourceArtifact: "lab/fixtures/non-adjacent-free-space.json",
+    sourceLabel: "Lab free-space-after-E case",
     defaultExpansionGiB: 40,
     expectedOutcome: "ready",
     proves: [
@@ -158,6 +168,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "baseline",
     summary: "Original GPT geometry fixture for exercising table parsing.",
     sourceArtifact: "lab/fixtures/gpt-layout.json",
+    sourceLabel: "Generic GPT layout",
     defaultExpansionGiB: 16,
     expectedOutcome: "ready",
     proves: [
@@ -172,6 +183,7 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
     category: "table-compatibility",
     summary: "Original MBR geometry fixture retained as an explicit unsupported case.",
     sourceArtifact: "lab/fixtures/mbr-layout.json",
+    sourceLabel: "Generic MBR layout",
     defaultExpansionGiB: 40,
     expectedOutcome: "refused",
     proves: [
@@ -182,10 +194,11 @@ export const partitionLabScenarios: PartitionLabScenario[] = [
   },
   {
     id: "lab-interrupted-operation",
-    title: "Interrupted operation placeholder",
-    category: "recovery-placeholder",
-    summary: "Original recovery-oriented placeholder for future interrupted-write handling.",
+    title: "Interrupted operation recovery case",
+    category: "recovery-review",
+    summary: "Recovery-oriented case for future interrupted-write handling.",
     sourceArtifact: "lab/fixtures/interrupted-operation-placeholder.json",
+    sourceLabel: "Interrupted operation recovery case",
     defaultExpansionGiB: 40,
     expectedOutcome: "refused",
     proves: [

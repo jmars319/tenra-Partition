@@ -22,12 +22,12 @@ http://127.0.0.1:8765/
 
 The dashboard can:
 
-- List mock layout fixtures.
+- List local lab layouts.
 - Accept operation inputs such as “increase C by 40G using E.”
 - Show a visual disk map and partition table.
-- Run the mock planner.
+- Run the read-only planner.
 - Show blockers, warnings, and operation queue status.
-- Run mock verification.
+- Run read-only verification.
 - Animate the planned process steps.
 - Display the exact JSON returned by the local API.
 
@@ -38,4 +38,4 @@ The dashboard cannot:
 - Format filesystems.
 - Run destructive operations.
 
-The local API is served by `scripts/lab_ui.py`. It binds to `127.0.0.1` by default and exposes only mock planning, mock verification, fixture inspection, and safety-mode metadata.
+The local API is served by `scripts/lab_ui.py`. It binds to `127.0.0.1` by default and exposes only read-only planning, read-only verification, layout inspection, and safety-mode metadata.

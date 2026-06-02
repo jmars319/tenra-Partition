@@ -8,8 +8,8 @@ The safety validator currently detects:
 
 - Unknown or unsupported filesystem type
 - Mounted partitions
-- Encrypted or BitLocker-placeholder partitions
-- Dirty filesystem placeholder
+- Encrypted or BitLocker-like partitions
+- Dirty filesystems that require repair
 - Insufficient shrinkable free space
 - Non-adjacent source and target partitions
 - Unsupported partition table type

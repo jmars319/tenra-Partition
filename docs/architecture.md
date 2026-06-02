@@ -10,11 +10,11 @@ tenra Partition starts as a read-only planner, simulator, and integrated lab har
 - `src/simulation`: in-memory operation application and final layout validation.
 - `src/io`: lab JSON import and tenra Partition export helpers.
 - `src-tauri`: Rust Tauri shell. Execution is explicitly disabled.
-- `lab`: integrated validation harness for fixtures, raw images, Windows VHDX scripts, inspection, smoke tests, and guarded destructive-mode refusal.
+- `lab`: integrated validation harness for local layouts, raw images, Windows VHDX scripts, inspection, smoke tests, and guarded destructive-mode refusal.
 
 ## Scanner Abstraction
 
-The current scanner input is mock JSON with schema `partition-lab.disk-layout.v1`.
+The current scanner input is local lab JSON with schema `partition-lab.disk-layout.v1`.
 The schema name is kept for compatibility with existing fixtures even though the
 harness now lives inside this repo.
 

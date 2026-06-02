@@ -152,10 +152,10 @@ class LabUiHandler(BaseHTTPRequestHandler):
                 self.send_json(
                     {
                         "modes": [
-                            {"id": "mock", "label": "Mock mode", "status": "active", "writes": False},
+                            {"id": "mock", "label": "Local layout mode", "status": "active", "writes": False},
                             {"id": "image", "label": "Image mode", "status": "available", "writes": False},
                             {"id": "loop", "label": "Loop-device mode", "status": "guarded", "writes": True},
-                            {"id": "vm", "label": "Future VM mode", "status": "not implemented", "writes": False},
+                            {"id": "vm", "label": "Future VM mode", "status": "not available", "writes": False},
                         ],
                         "example_assessment": safety_assessment(PROJECT_ROOT / "test-images" / "example.vhdx"),
                     }

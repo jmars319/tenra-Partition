@@ -2,7 +2,7 @@
 
 tenra Partition Lab is for disposable assets only.
 
-Default behavior is mock mode. Mock mode reads JSON fixtures and produces plans or verification reports without touching a disk image or block device.
+Default behavior is local layout mode. Local layout mode reads JSON layouts and produces plans or verification reports without touching a disk image or block device.
 
 Windows compatibility is a Day 1 requirement. The preferred real-image mode on Windows is VHDX, created and attached with `diskpart` through PowerShell scripts.
 
